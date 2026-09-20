@@ -217,6 +217,22 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     else if (!cur?.imported)
       donBy.set(d.playerTag, { donated: (cur?.donated ?? 0) + d.donated, received: (cur?.received ?? 0) + d.received, imported: false });
   }
+  // Per-player season stats cover players who changed or left a clan; a sheet import still wins.
+  const stats = tags.length
+    ? await db
+        .select()
+        .from(s.playerStats)
+        .where(and(eq(s.playerStats.season, donationSeason), inArray(s.playerStats.playerTag, tags)))
+    : [];
+  for (const st of stats) {
+    const cur = donBy.get(st.playerTag);
+    if (cur?.imported) continue;
+    donBy.set(st.playerTag, {
+      donated: Math.max(cur?.donated ?? 0, st.donated),
+      received: Math.max(cur?.received ?? 0, st.received),
+      imported: false,
+    });
+  }
 
   // Bonus history in the 6 previous seasons.
   const prevSeasons = await previousSeasons(db, season);

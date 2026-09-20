@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "JPA CWL Bonus", robots: { index: fal
 
 const nav = [
   { href: "/", label: "Seasons" },
-  { href: "/donations", label: "Donations" },
+  { href: "/donations", label: "Season stats" },
   { href: "/clans", label: "Clans" },
   { href: "/players", label: "Players" },
   { href: "/import", label: "Import" },

@@ -29,6 +29,13 @@
       "when": 1789945568964,
       "tag": "0003_war_clan_names",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789946252630,
+      "tag": "0004_player_stats",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import { REQUIRED_ATTACKS, warResult } from "./logic";
 
@@ -26,55 +26,6 @@ export async function donationTotals(db: DB, season: string, tags?: string[]) {
     }
   }
   return out;
-}
-
-export interface DonationRow {
-  tag: string;
-  name: string;
-  clans: string[];
-  donated: number;
-  received: number;
-  ratio: number | null;
-  imported: boolean;
-  discordUsername: string | null;
-  discordId: string | null;
-  updatedAt: Date | null;
-}
-
-export async function donationSeasons(): Promise<string[]> {
-  const db = await getDb();
-  const rows = await db.selectDistinct({ season: s.donations.season }).from(s.donations).orderBy(desc(s.donations.season));
-  return rows.map((r) => r.season);
-}
-
-export async function donationBoard(season: string): Promise<{ rows: DonationRow[]; clanNames: [string, string][]; lastUpdated: Date | null }> {
-  const db = await getDb();
-  const totals = await donationTotals(db, season);
-  const tags = [...totals.keys()];
-  const players = tags.length ? await db.select().from(s.players).where(inArray(s.players.tag, tags)) : [];
-  const playerBy = new Map(players.map((p) => [p.tag, p]));
-  const clans = await db.select().from(s.clans);
-
-  let lastUpdated: Date | null = null;
-  const rows: DonationRow[] = tags.map((tag) => {
-    const t = totals.get(tag)!;
-    const p = playerBy.get(tag);
-    if (t.updatedAt && (!lastUpdated || t.updatedAt > lastUpdated)) lastUpdated = t.updatedAt;
-    return {
-      tag,
-      name: p?.name || tag,
-      clans: t.clans,
-      donated: t.donated,
-      received: t.received,
-      ratio: t.received > 0 ? t.donated / t.received : null,
-      imported: t.imported,
-      discordUsername: p?.discordUsername ?? null,
-      discordId: p?.discordId ?? null,
-      updatedAt: t.updatedAt,
-    };
-  });
-  rows.sort((a, b) => b.donated - a.donated || b.received - a.received || a.name.localeCompare(b.name));
-  return { rows, clanNames: clans.map((c) => [c.tag, c.name || c.tag] as [string, string]), lastUpdated };
 }
 
 // ---------------- CWL attacks, round by round ----------------

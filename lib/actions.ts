@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "./db";
 import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
-import { coc, enc, type ApiClan } from "./coc";
-import { snapshotDonations, syncAllCwl, syncCwlClan } from "./sync";
+import { coc, enc, type ApiClan, type ApiPlayer } from "./coc";
+import { snapshotDonations, snapshotPlayerStats, syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
 import { importCwlExport, importDonations, importHistory, importPlayers, type HistoryColumn } from "./imports";
 import { loadRows, writeSheetTab } from "./sheets";
@@ -157,6 +157,45 @@ export async function saveDonationsNow() {
       ok: bad.length === 0,
       message: `Donations saved for ${res.length - bad.length}/${res.length} alliance clans.` + (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
     };
+  });
+}
+
+/** Season stats for every family-clan member plus tracked players (attack wins, donations, received). */
+export async function refreshPlayerStats() {
+  return run(async () => {
+    const r = await snapshotPlayerStats();
+    return { ok: r.ok, message: r.message };
+  });
+}
+
+/** Follow a player who is not in a family clan, by tag. */
+export async function trackPlayer(rawTag: string) {
+  return run(async () => {
+    const tag = normTag(rawTag);
+    if (!tag) throw new Error("Enter a player tag.");
+    const db = await getDb();
+    let name = "";
+    let clan = "";
+    try {
+      const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
+      name = p.name;
+      clan = p.clan?.name ?? "";
+    } catch (e) {
+      throw new Error(`Could not find ${tag}: ${(e as Error).message}`);
+    }
+    await db
+      .insert(s.players)
+      .values({ tag, name, isTracked: true })
+      .onConflictDoUpdate({ target: s.players.tag, set: { isTracked: true, name, updatedAt: new Date() } });
+    return `Now tracking ${name} (${tag})${clan ? ` from ${clan}` : ""}. Refresh stats to pull their numbers.`;
+  });
+}
+
+export async function setTracked(tag: string, tracked: boolean) {
+  return run(async () => {
+    const db = await getDb();
+    await db.update(s.players).set({ isTracked: tracked, updatedAt: new Date() }).where(eq(s.players.tag, tag));
+    return tracked ? "Tracking this player." : "No longer tracking this player.";
   });
 }
 

@@ -1,6 +1,6 @@
 import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
-import { coc, CocError, enc, pool, type ApiLeagueGroup, type ApiWar, type ApiMember } from "./coc";
+import { coc, CocError, enc, pool, type ApiLeagueGroup, type ApiWar, type ApiMember, type ApiPlayer } from "./coc";
 import { cwlSeasonId, gameSeasonAt, prevMonth, seasonLabel } from "./util";
 
 export interface SyncResult {
@@ -209,6 +209,98 @@ export async function snapshotDonations(now = new Date()): Promise<SyncResult[]>
       return { clanTag: c.tag, ok: false, message: (e as Error).message };
     }
   });
+}
+
+export interface StatsSyncResult {
+  ok: boolean;
+  season: string;
+  players: number;
+  failed: number;
+  message: string;
+}
+
+/**
+ * Season stats per player: multiplayer attack wins, donations and received.
+ * Covers every member of a family clan plus any player marked as tracked.
+ * Values only grow during a season, so we keep the highest value seen — that
+ * survives a player leaving a clan, and captures the final numbers before reset.
+ */
+export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncResult> {
+  const db = await getDb();
+  const season = gameSeasonAt(now);
+  const clanList = await db.select().from(s.clans).where(eq(s.clans.isAlliance, true));
+
+  const tags = new Set<string>();
+  let clanErrors = 0;
+  await pool(clanList, 4, async (c) => {
+    try {
+      const res = await coc<{ items: ApiMember[] }>(`/clans/${enc(c.tag)}/members?limit=50`);
+      for (const m of res.items ?? []) tags.add(m.tag);
+    } catch {
+      clanErrors++;
+    }
+  });
+  const tracked = await db.select().from(s.players).where(eq(s.players.isTracked, true));
+  for (const t of tracked) tags.add(t.tag);
+  if (!tags.size)
+    return { ok: false, season, players: 0, failed: 0, message: "No players found. Add family clans, or track players by tag." };
+
+  let failed = 0;
+  const rows: (typeof s.playerStats.$inferInsert)[] = [];
+  await pool([...tags], 8, async (tag) => {
+    try {
+      const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
+      rows.push({
+        season,
+        playerTag: p.tag,
+        name: p.name,
+        clanTag: p.clan?.tag ?? null,
+        clanName: p.clan?.name ?? null,
+        donated: p.donations ?? 0,
+        received: p.donationsReceived ?? 0,
+        attackWins: p.attackWins ?? 0,
+        defenseWins: p.defenseWins ?? 0,
+        trophies: p.trophies ?? null,
+        townhall: p.townHallLevel ?? null,
+      });
+    } catch {
+      failed++;
+    }
+  });
+
+  for (let i = 0; i < rows.length; i += 200) {
+    const chunk = rows.slice(i, i + 200);
+    await db
+      .insert(s.playerStats)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [s.playerStats.season, s.playerStats.playerTag],
+        set: {
+          name: sql`excluded.name`,
+          clanTag: sql`excluded.clan_tag`,
+          clanName: sql`excluded.clan_name`,
+          donated: sql`greatest(${s.playerStats.donated}, excluded.donated)`,
+          received: sql`greatest(${s.playerStats.received}, excluded.received)`,
+          attackWins: sql`greatest(${s.playerStats.attackWins}, excluded.attack_wins)`,
+          defenseWins: sql`greatest(${s.playerStats.defenseWins}, excluded.defense_wins)`,
+          trophies: sql`excluded.trophies`,
+          townhall: sql`excluded.townhall`,
+          updatedAt: new Date(),
+        },
+      });
+    await upsertPlayerNames(db, chunk.map((r) => ({ tag: r.playerTag, name: r.name ?? "" })));
+  }
+
+  return {
+    ok: failed === 0 && clanErrors === 0,
+    season,
+    players: rows.length,
+    failed,
+    message:
+      `Season ${season}: stats saved for ${rows.length} player(s).` +
+      (failed ? ` ${failed} player(s) could not be read.` : "") +
+      (clanErrors ? ` ${clanErrors} clan(s) could not be read.` : ""),
+  };
 }
 
 export async function clansInvolvedIn(db: DB, seasonId: string, clanTag: string) {

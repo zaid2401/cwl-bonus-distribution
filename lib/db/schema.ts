@@ -31,6 +31,8 @@ export const players = pgTable(
     /** Priority number from the application. 1 = main, 2+ = alt. */
     pn: integer("pn"),
     isGuest: boolean("is_guest").notNull().default(false),
+    /** Track this player's season stats even when they are not in a family clan. */
+    isTracked: boolean("is_tracked").notNull().default(false),
     notes: text("notes"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -185,6 +187,30 @@ export const bonusHistory = pgTable(
     source: text("source").notNull().default("app"),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.memberKey] })],
+);
+
+/**
+ * Per player, per game season (the season that resets with donations).
+ * Values only ever grow within a season, so we keep the highest seen.
+ */
+export const playerStats = pgTable(
+  "player_stats",
+  {
+    season: text("season").notNull(),
+    playerTag: text("player_tag").notNull(),
+    name: text("name").notNull().default(""),
+    clanTag: text("clan_tag"),
+    clanName: text("clan_name"),
+    donated: integer("donated").notNull().default(0),
+    received: integer("received").notNull().default(0),
+    /** Multiplayer attack wins this season. */
+    attackWins: integer("attack_wins").notNull().default(0),
+    defenseWins: integer("defense_wins").notNull().default(0),
+    trophies: integer("trophies"),
+    townhall: integer("townhall"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.season, t.playerTag] })],
 );
 
 export const settings = pgTable("settings", {

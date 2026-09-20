@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { snapshotDonations, syncAllCwl } from "@/lib/sync";
+import { snapshotDonations, snapshotPlayerStats, syncAllCwl } from "@/lib/sync";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const donations = await snapshotDonations();
+  const stats = await snapshotPlayerStats();
   const cwl = await syncAllCwl();
-  return NextResponse.json({ donations, cwl });
+  return NextResponse.json({ donations, stats, cwl });
 }

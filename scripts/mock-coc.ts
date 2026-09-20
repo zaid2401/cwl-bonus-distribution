@@ -85,6 +85,27 @@ http
       const c = clans.find((x) => x.tag === m![1]);
       return c ? json(res, 200, { tag: c.tag, name: c.name }) : json(res, 404, { reason: "notFound" });
     }
+    if ((m = /^\/v1\/players\/(#[^/?]+)$/.exec(url))) {
+      const home = clans.find((c) => c.members.some((x) => x.tag === m![1]));
+      const mem = home?.members.find((x) => x.tag === m![1]);
+      const i = home ? home.members.indexOf(mem!) : 0;
+      if (!mem) {
+        // An "outside" player, used to test tracking someone who is not in a family clan.
+        if (!/^#GUEST/.test(m[1])) return json(res, 404, { reason: "notFound" });
+        return json(res, 200, { tag: m[1], name: "Outsider", townHallLevel: 16, trophies: 5200, attackWins: 41, defenseWins: 9, donations: 3300, donationsReceived: 1200, clan: { tag: "#OTHER", name: "Some Other Clan" } });
+      }
+      return json(res, 200, {
+        tag: mem.tag,
+        name: mem.name,
+        townHallLevel: mem.townHallLevel,
+        trophies: 4000 + i * 37,
+        attackWins: 80 - i * 3,
+        defenseWins: 10 + i,
+        donations: 5000 - i * 250,
+        donationsReceived: 1000 + i * 10,
+        clan: { tag: home!.tag, name: home!.name },
+      });
+    }
     if (url.startsWith("/v1/locations")) return json(res, 200, { items: [{ id: 1 }] });
     json(res, 404, { reason: "notFound", message: url });
   })

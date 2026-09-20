@@ -1,65 +1,78 @@
 import Link from "next/link";
-import { donationBoard, donationSeasons } from "@/lib/live";
+import { statsBoard, statsSeasons } from "@/lib/stats";
 import { gameSeasonAt, prevMonth } from "@/lib/util";
-import { DonationsTable } from "@/components/DonationsTable";
+import { StatsTable, type StatsView } from "@/components/StatsTable";
 import { LiveControls } from "@/components/LiveControls";
-import { saveDonationsNow } from "@/lib/actions";
+import { refreshPlayerStats } from "@/lib/actions";
+import { TrackPlayer } from "@/components/TrackPlayer";
 
 export const dynamic = "force-dynamic";
 
-export default async function DonationsPage(props: PageProps<"/donations">) {
+const VIEWS: { id: StatsView; label: string }[] = [
+  { id: "both", label: "Donations + Received" },
+  { id: "donations", label: "Donations" },
+  { id: "attacks", label: "Attacks" },
+];
+
+export default async function StatsPage(props: PageProps<"/donations">) {
   const sp = await props.searchParams;
   const current = gameSeasonAt(new Date());
   const season = typeof sp.season === "string" && sp.season ? sp.season : current;
-  const known = await donationSeasons();
-  const seasons = [...new Set([current, prevMonth(current), ...known])].sort().reverse();
-  const { rows, clanNames, lastUpdated } = await donationBoard(season);
+  const view = (VIEWS.find((v) => v.id === sp.view)?.id ?? "both") as StatsView;
 
-  const totalDonated = rows.reduce((n, r) => n + r.donated, 0);
-  const totalReceived = rows.reduce((n, r) => n + r.received, 0);
+  const known = await statsSeasons();
+  const seasons = [...new Set([current, prevMonth(current), ...known])].sort().reverse();
+  const board = await statsBoard(season);
+  const link = (patch: { season?: string; view?: StatsView }) =>
+    `/donations?season=${patch.season ?? season}&view=${patch.view ?? view}`;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Donations</h1>
+          <h1 className="text-2xl font-bold">Season stats</h1>
           <p className="text-muted">
-            Combined across all alliance clans. {rows.length} players · {totalDonated.toLocaleString()} donated ·{" "}
-            {totalReceived.toLocaleString()} received
-            {season < current && <> · season {season} has ended, so these totals are final</>}
+            Game season {season} — resets with donations, same as the legend season. {board.totals.players} players ·{" "}
+            {board.totals.donated.toLocaleString()} donated · {board.totals.received.toLocaleString()} received ·{" "}
+            {board.totals.attacks.toLocaleString()} attack wins
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {seasons.map((s) => (
-            <Link
-              key={s}
-              href={`/donations?season=${s}`}
-              className={`btn btn-sm ${s === season ? "border-accent text-accent" : ""}`}
-              prefetch={false}
-            >
-              {s}
-              {s === current && " (live)"}
+          {seasons.map((sn) => (
+            <Link key={sn} href={link({ season: sn })} className={`btn btn-sm ${sn === season ? "border-accent text-accent" : ""}`} prefetch={false}>
+              {sn}
+              {sn === current && " (live)"}
             </Link>
           ))}
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-1">
+        {VIEWS.map((v) => (
+          <Link key={v.id} href={link({ view: v.id })} className={`btn ${v.id === view ? "border-accent text-accent" : ""}`} prefetch={false}>
+            {v.label}
+          </Link>
+        ))}
+      </div>
+
       {season === current && (
-        <div className="card p-3">
+        <div className="card space-y-3 p-3">
           <LiveControls
-            action={saveDonationsNow}
+            action={refreshPlayerStats}
             label="Refresh from game"
-            pendingText="Fetching…"
-            lastUpdated={lastUpdated ? new Date(lastUpdated).toLocaleString() : null}
+            pendingText="Fetching players…"
+            lastUpdated={board.lastUpdated ? new Date(board.lastUpdated).toLocaleString() : null}
+            intervalSeconds={120}
           />
-          <p className="mt-2 text-xs text-muted">
-            The daily job saves donations automatically. Use this when you want the very latest numbers, for example just before the season
-            reset.
+          <p className="text-xs text-muted">
+            Reads every family-clan member plus tracked players, one by one, so attack wins are included. The daily job does this
+            automatically; refresh here when you want the numbers right now.
           </p>
+          <TrackPlayer />
         </div>
       )}
 
-      <DonationsTable rows={rows} clanNames={clanNames} />
+      <StatsTable rows={board.rows} clans={board.clans} view={view} />
     </div>
   );
 }

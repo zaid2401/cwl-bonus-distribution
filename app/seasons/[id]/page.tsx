@@ -4,7 +4,7 @@ import { getDb, schema as s } from "@/lib/db";
 import { getSeason, seasonOverview } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
 import { SeasonSettings } from "@/components/SeasonSettings";
-import { deleteSeason, exportSeasonToSheet, finalizeSeason, reopenSeason, syncClan } from "@/lib/actions";
+import { applyRecordedBonuses, deleteSeason, exportSeasonToSheet, finalizeSeason, reopenSeason, syncClan } from "@/lib/actions";
 import { tagSlug } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +20,13 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
   const finalized = season.status === "finalized";
 
   const totals = clans.reduce(
-    (a, c) => ({ bonuses: a.bonuses + c.bonuses, selected: a.selected + c.selected, eligible: a.eligible + c.eligible }),
-    { bonuses: 0, selected: 0, eligible: 0 },
+    (a, c) => ({
+      bonuses: a.bonuses + c.bonuses,
+      selected: a.selected + c.selected,
+      eligible: a.eligible + c.eligible,
+      recorded: a.recorded + c.recorded,
+    }),
+    { bonuses: 0, selected: 0, eligible: 0, recorded: 0 },
   );
 
   return (
@@ -38,9 +43,19 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           <p className="text-muted">
             Donations from season <b className="text-text">{season.donationSeason ?? "—"}</b> · {totals.selected}/{totals.bonuses} bonuses picked ·{" "}
             {totals.eligible} eligible players
+            {totals.recorded > 0 && <> · {totals.recorded} already in bonus history</>}
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
+          {totals.recorded > totals.selected && !finalized && (
+            <ActionButton
+              action={applyRecordedBonuses.bind(null, id)}
+              confirm={`Tick the players already in bonus history for ${season.label}? One account per member.`}
+              pendingText="Applying…"
+            >
+              Apply history to picks
+            </ActionButton>
+          )}
           <ActionButton action={exportSeasonToSheet.bind(null, id)} pendingText="Exporting…">
             Export to Google Sheet
           </ActionButton>
@@ -72,6 +87,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
               <th className="th">Bonuses</th>
               <th className="th">Picked</th>
               <th className="th">Eligible (7/7, main, member)</th>
+              <th className="th">In history</th>
               <th className="th">Last sync</th>
               <th className="th"></th>
             </tr>
@@ -101,6 +117,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
                     </span>
                   </td>
                   <td className="td">{c.eligible}</td>
+                  <td className="td">{c.recorded || <span className="text-muted">—</span>}</td>
                   <td className="td text-xs text-muted">
                     {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString() : "never"}
                     {c.syncMessage && <div className="max-w-64 truncate" title={c.syncMessage}>{c.syncMessage}</div>}
@@ -117,7 +134,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
             })}
             {clans.length === 0 && (
               <tr>
-                <td className="td text-muted" colSpan={7}>
+                <td className="td text-muted" colSpan={8}>
                   No clans in this season yet.
                 </td>
               </tr>

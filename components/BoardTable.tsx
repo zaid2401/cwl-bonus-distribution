@@ -19,20 +19,23 @@ export function BoardTable(props: {
 }) {
   const { seasonId, clanTag, finalized, rows } = props;
   const { pending, result, exec } = useAction();
-  const [filter, setFilter] = useState<"all" | "eligible" | "selected">("all");
+  const [filter, setFilter] = useState<"all" | "eligible" | "selected" | "recorded">("all");
   const [editing, setEditing] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const picked = rows.filter((r) => r.selected).length;
+  const recorded = rows.filter((r) => r.recorded).length;
   const hintRank = useMemo(() => {
     const m = new Map<string, number>();
     rows.filter((r) => r.eligible).forEach((r, i) => i < props.bonuses && m.set(r.tag, i + 1));
     return m;
   }, [rows, props.bonuses]);
 
+  const matchesFilter = (r: BoardRow) =>
+    filter === "all" || (filter === "eligible" ? r.eligible : filter === "recorded" ? r.recorded : r.selected);
   const visible = rows.filter(
     (r) =>
-      (filter === "all" || (filter === "eligible" ? r.eligible : r.selected)) &&
+      matchesFilter(r) &&
       (!q || r.name.toLowerCase().includes(q.toLowerCase()) || r.tag.includes(q.toUpperCase()) || (r.discordUsername ?? "").toLowerCase().includes(q.toLowerCase())),
   );
   const history = [...props.prevSeasons].reverse(); // oldest → newest
@@ -50,11 +53,16 @@ export function BoardTable(props: {
         </div>
         <BonusCount {...props} />
         <div className="flex gap-1">
-          {(["all", "eligible", "selected"] as const).map((f) => (
-            <button key={f} className={`btn btn-sm ${filter === f ? "border-accent text-accent" : ""}`} onClick={() => setFilter(f)}>
-              {f === "all" ? `All (${rows.length})` : f === "eligible" ? `Eligible (${rows.filter((r) => r.eligible).length})` : `Picked (${picked})`}
-            </button>
-          ))}
+          {(["all", "eligible", "selected", "recorded"] as const).map((f) => {
+            const count = f === "all" ? rows.length : f === "eligible" ? rows.filter((r) => r.eligible).length : f === "selected" ? picked : recorded;
+            if (f === "recorded" && !recorded) return null;
+            const label = { all: "All", eligible: "Eligible", selected: "Picked", recorded: "In history" }[f];
+            return (
+              <button key={f} className={`btn btn-sm ${filter === f ? "border-accent text-accent" : ""}`} onClick={() => setFilter(f)}>
+                {label} ({count})
+              </button>
+            );
+          })}
         </div>
         <input className="input w-48" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="ml-auto flex items-center gap-3">
@@ -159,6 +167,11 @@ export function BoardTable(props: {
                   </td>
                   <td className="td">
                     <div className="flex flex-wrap gap-1">
+                      {r.recorded && (
+                        <span className="chip bg-good/15 text-good" title="Already recorded in bonus history for this season">
+                          in history
+                        </span>
+                      )}
                       {r.backToBack && <span className="chip bg-warn/15 text-warn" title={`${r.recentBonuses} bonuses in last ${history.length} seasons`}>B2B {r.recentBonuses}</span>}
                       {r.starSteal.length > 0 && (
                         <span

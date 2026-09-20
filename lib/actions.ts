@@ -8,6 +8,7 @@ import { getDb, schema as s } from "./db";
 import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
 import { coc, enc, type ApiClan } from "./coc";
 import { snapshotDonations, syncAllCwl, syncCwlClan } from "./sync";
+import { clanBoard, seasonOverview } from "./view";
 import { importCwlExport, importDonations, importHistory, importPlayers, type HistoryColumn } from "./imports";
 import { loadRows, writeSheetTab } from "./sheets";
 import { buildSeasonExport } from "./export";
@@ -258,9 +259,62 @@ export async function finalizeSeason(seasonId: string) {
       const key = memberKey(pl?.discordId, p.playerTag);
       values.set(key, { seasonId, memberKey: key, playerTag: p.playerTag, source: "app" });
     }
-    if (values.size) await db.insert(s.bonusHistory).values([...values.values()]).onConflictDoNothing();
+    if (values.size)
+      await db
+        .insert(s.bonusHistory)
+        .values([...values.values()])
+        // A pick wins over a mark imported for the same member and season.
+        .onConflictDoUpdate({
+          target: [s.bonusHistory.seasonId, s.bonusHistory.memberKey],
+          set: { playerTag: sql`excluded.player_tag`, source: "app" },
+        });
     await db.update(s.seasons).set({ status: "finalized", finalizedAt: new Date() }).where(eq(s.seasons.id, seasonId));
     return `Finalized: ${values.size} bonus(es) recorded in history.`;
+  });
+}
+
+/**
+ * Ticks the players whose bonus is already recorded in history for this season —
+ * used after importing a season you decided by hand. One account per member:
+ * the main account, then most attacks, then most donations.
+ */
+export async function applyRecordedBonuses(seasonId: string) {
+  return run(async () => {
+    const db = await getDb();
+    const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
+    if (season?.status === "finalized") throw new Error("Season is finalized. Reopen it first.");
+    const recorded = new Set(
+      (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map((h) => h.memberKey),
+    );
+    if (!recorded.size) throw new Error("No bonus history recorded for this season yet. Import it first.");
+
+    const clans = await seasonOverview(seasonId);
+    const best = new Map<string, { clanTag: string; playerTag: string; rank: number[] }>();
+    // Higher is better, compared left to right.
+    const better = (a: number[], b: number[]) => {
+      const i = a.findIndex((v, k) => v !== b[k]);
+      return i >= 0 && a[i] > b[i];
+    };
+    for (const c of clans) {
+      const board = await clanBoard(seasonId, c.clanTag, db);
+      for (const row of board.rows) {
+        if (!recorded.has(row.memberKey)) continue;
+        const rank = [row.selected ? 1 : 0, row.isAlt ? 0 : 1, row.eligible ? 1 : 0, row.attacks, row.donated];
+        const cur = best.get(row.memberKey);
+        if (!cur || better(rank, cur.rank)) best.set(row.memberKey, { clanTag: c.clanTag, playerTag: row.tag, rank });
+      }
+    }
+    for (const pick of best.values())
+      await db
+        .insert(s.participants)
+        .values({ seasonId, clanTag: pick.clanTag, playerTag: pick.playerTag, selected: true })
+        .onConflictDoUpdate({
+          target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag],
+          set: { selected: true },
+        });
+
+    const missing = recorded.size - best.size;
+    return `Ticked ${best.size} player(s) from recorded history.` + (missing > 0 ? ` ${missing} recorded member(s) have no account in this season's clans.` : "");
   });
 }
 

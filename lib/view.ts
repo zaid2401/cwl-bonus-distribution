@@ -47,6 +47,7 @@ export interface ClanSummary {
   bonusOverride: number | null;
   selected: number;
   eligible: number;
+  recorded: number;
   lastSyncedAt: Date | null;
   syncMessage: string | null;
 }
@@ -92,6 +93,7 @@ export async function seasonOverview(seasonId: string): Promise<ClanSummary[]> {
       bonusOverride: cs.bonusOverride,
       selected: board.rows.filter((r) => r.selected).length,
       eligible: board.rows.filter((r) => r.eligible).length,
+      recorded: board.rows.filter((r) => r.recorded).length,
       lastSyncedAt: cs.lastSyncedAt,
       syncMessage: cs.syncMessage,
     });
@@ -124,6 +126,8 @@ export interface BoardRow {
   backToBack: boolean;
   eligible: boolean;
   selected: boolean;
+  /** Already in bonus history for THIS season (e.g. imported from the old sheet). */
+  recorded: boolean;
   transferToTag: string | null;
   remark: string | null;
   otherAccounts: { tag: string; name: string }[];
@@ -220,6 +224,10 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
   const hist = prevIds.length
     ? await db.select().from(s.bonusHistory).where(inArray(s.bonusHistory.seasonId, prevIds))
     : [];
+  // Bonuses already recorded for this season (imported, or written by an earlier finalize).
+  const recordedKeys = new Set(
+    (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map((h) => h.memberKey),
+  );
   const histBy = new Map<string, Set<string>>();
   for (const h of hist) {
     if (!histBy.has(h.seasonId)) histBy.set(h.seasonId, new Set());
@@ -284,6 +292,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       backToBack: recent >= B2B_THRESHOLD,
       eligible: isEligible({ attacks: attacksCount, pn, isGuest }),
       selected: part?.selected ?? false,
+      recorded: recordedKeys.has(key),
       transferToTag: part?.transferToTag ?? null,
       remark: part?.remark ?? null,
       otherAccounts: pl?.discordId

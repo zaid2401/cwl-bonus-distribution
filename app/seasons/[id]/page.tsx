@@ -59,6 +59,9 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           <ActionButton action={exportSeasonToSheet.bind(null, id)} pendingText="Exporting…">
             Export to Google Sheet
           </ActionButton>
+          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks`}>
+            Live attacks
+          </Link>
           <a className="btn" href={`/api/export/${encodeURIComponent(id)}`}>
             Download CSV
           </a>

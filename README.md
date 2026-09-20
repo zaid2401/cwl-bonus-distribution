@@ -6,6 +6,8 @@ Private web app for picking CWL bonus recipients.
 - Saves donations for all alliance clans every day, combined across clans.
 - Shows eligibility (7/7 attacks, main account, not a guest), bonus history for the last 6 seasons, and the **B2B** (3+ bonuses in the last 6 seasons) and **Star steal** flags.
 - You tick the recipients, move a bonus to an alt if needed, finalize, then export to Google Sheets or CSV.
+- **Donations page**: live donated/received per player for any game season, combined across alliance clans, with a refresh button and optional auto-refresh.
+- **Live attacks page** (season → Live attacks): round-by-round grid per clan showing stars, attacks still open in a running war, and missed attacks.
 - Everything can be edited by hand. Imports from Google Sheet links (ClashPerk exports, bonus history, player links) are there as a fallback.
 
 ---

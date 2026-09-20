@@ -33,11 +33,16 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
             {board.hasApiData ? " attacks from API" : " no API war data (using imported/manual attacks)"}
           </p>
         </div>
-        {!finalized && (
-          <ActionButton action={syncClan.bind(null, board.clanTag)} pendingText="Syncing…">
-            Sync this clan
-          </ActionButton>
-        )}
+        <div className="flex flex-wrap items-start gap-2">
+          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${clan}`}>
+            Attack details
+          </Link>
+          {!finalized && (
+            <ActionButton action={syncClan.bind(null, board.clanTag)} pendingText="Syncing…">
+              Sync this clan
+            </ActionButton>
+          )}
+        </div>
       </div>
 
       <BoardTable

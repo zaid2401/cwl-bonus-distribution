@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bonusCount, isEligible, starStealFlags, warResult } from "../lib/logic";
-import { gameSeasonAt, guessSeasonFromHeader, normTag, prevMonth } from "../lib/util";
+import { cwlSeasonId, gameSeasonAt, guessSeasonFromHeader, normTag, prevMonth } from "../lib/util";
 import { parseCsv } from "../lib/csv";
 
 const war = (cs: number, cd: number, os: number, od: number, state = "warEnded") => ({
@@ -65,6 +65,14 @@ test("season helpers", () => {
   assert.deepEqual(guessSeasonFromHeader("JULY", new Date("2026-09-14")), { id: "2026-07", sortKey: "2026-07-01" });
   assert.deepEqual(guessSeasonFromHeader("6/2/2026"), { id: "2026-06", sortKey: "2026-06-02" });
   assert.equal(normTag(" #2pp o "), "#2PP0");
+});
+
+test("CWL season id is keyed by month, whatever start date the API reports", () => {
+  // Groups start on different days, so the API's season differs between clans.
+  assert.equal(cwlSeasonId("2026-09-01"), "2026-09");
+  assert.equal(cwlSeasonId("2026-09-02"), "2026-09");
+  assert.equal(cwlSeasonId("2026-09"), "2026-09");
+  assert.equal(cwlSeasonId(""), "");
 });
 
 test("csv parser handles quotes and newlines", () => {

@@ -13,7 +13,7 @@ const LAST_ROUND_LIVE = process.env.MOCK_LIVE === "1";
 
 const clans = CLAN_TAGS.map((tag, ci) => ({
   tag,
-  name: ci === 0 ? "JPA CWL Mock" : ci === 1 ? "JPA Latecomers Mock" : `Enemy ${ci}`,
+  name: ci === 0 ? "JPA CWL Mock" : ci === 1 ? "JPA CWL Mock 2" : `Enemy ${ci}`,
   members: Array.from({ length: SIZE + 3 }, (_, i) => ({
     tag: `#${"PLQGRJCUV"[ci]}${"289PYLQGRJCUV"[i % 13]}${"289PYLQGRJCUV"[(i * 7) % 13]}Q${i}`.replace(/1/g, "Y"),
     name: `${ci === 0 ? "Hero" : ci === 1 ? "Late" : "Foe"}${i + 1}`,

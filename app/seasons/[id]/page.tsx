@@ -68,7 +68,6 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           <thead>
             <tr>
               <th className="th">Clan</th>
-              <th className="th">Type</th>
               <th className="th">W / L / T</th>
               <th className="th">Bonuses</th>
               <th className="th">Picked</th>
@@ -87,9 +86,6 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
                       {c.clanName}
                     </Link>
                     <div className="text-xs text-muted">{c.clanTag}</div>
-                  </td>
-                  <td className="td">
-                    {c.cwlType === "latecomers" ? <span className="chip bg-warn/15 text-warn">Latecomers</span> : <span className="chip bg-panel2 text-muted">CWL</span>}
                   </td>
                   <td className="td whitespace-nowrap">
                     <span className="text-good">{c.wins}</span> / <span className="text-bad">{c.losses}</span> / {c.ties}
@@ -121,7 +117,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
             })}
             {clans.length === 0 && (
               <tr>
-                <td className="td text-muted" colSpan={8}>
+                <td className="td text-muted" colSpan={7}>
                   No clans in this season yet.
                 </td>
               </tr>

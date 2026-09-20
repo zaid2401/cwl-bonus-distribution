@@ -1,7 +1,7 @@
 import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import { coc, CocError, enc, pool, type ApiLeagueGroup, type ApiWar, type ApiMember } from "./coc";
-import { gameSeasonAt, prevMonth, seasonLabel } from "./util";
+import { cwlSeasonId, gameSeasonAt, prevMonth, seasonLabel } from "./util";
 
 export interface SyncResult {
   clanTag: string;
@@ -97,7 +97,7 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
   }
   if (!group?.season) return { clanTag, ok: false, message: `League group state: ${group?.state ?? "unknown"}` };
 
-  const season = await ensureSeason(db, group.season);
+  const season = await ensureSeason(db, cwlSeasonId(group.season));
   if (season.status === "finalized") return { clanTag, ok: true, message: `Season ${season.label} is finalized — skipped.` };
 
   const ours = group.clans.find((c) => c.tag === clanTag);

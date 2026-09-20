@@ -8,7 +8,6 @@ type Clan = { tag: string; name: string; cwlType: string; isAlliance: boolean; s
 
 const TYPES = [
   { value: "cwl", label: "CWL clan" },
-  { value: "latecomers", label: "CWL Latecomers" },
   { value: "none", label: "Not a CWL clan" },
 ];
 

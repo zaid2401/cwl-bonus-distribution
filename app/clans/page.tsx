@@ -12,7 +12,7 @@ export default async function ClansPage() {
       <div>
         <h1 className="text-2xl font-bold">Clans</h1>
         <p className="text-muted">
-          <b>CWL</b> / <b>Latecomers</b> clans are synced for CWL attacks and wins. <b>Alliance</b> clans have donations tracked (all combined). A
+          <b>CWL</b> clans are synced for CWL attacks and wins. <b>Alliance</b> clans have donations tracked (all combined). A
           clan can be both.
         </p>
       </div>

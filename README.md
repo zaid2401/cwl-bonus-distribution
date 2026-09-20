@@ -2,7 +2,7 @@
 
 Private web app for picking CWL bonus recipients.
 
-- Syncs CWL attacks and war wins from the Clash of Clans API. Bonuses per clan = **6 + wins**.
+- Syncs CWL attacks and war wins from the Clash of Clans API. Seasons are keyed by month, even though the API reports each league group's start date. Bonuses per clan = **6 + wins**.
 - Saves donations for all alliance clans every day, combined across clans.
 - Shows eligibility (7/7 attacks, main account, not a guest), bonus history for the last 6 seasons, and the **B2B** (3+ bonuses in the last 6 seasons) and **Star steal** flags.
 - You tick the recipients, move a bonus to an alt if needed, finalize, then export to Google Sheets or CSV.
@@ -66,7 +66,7 @@ COC_API_TOKEN=your-token
 
 ## Season workflow
 
-1. **Clans**: add your CWL clan tags (CWL or Latecomers) and alliance clan tags. This is a one-time step.
+1. **Clans**: add your CWL clan tags and your alliance clan tags. This is a one-time step.
 2. **Import** (first time only): bonus history from your old sheet's `DB` tab, and donations for the previous season if the app wasn't running then.
 3. During and after CWL, the daily job syncs automatically. You can also click **Sync CWL now**. Sync within a few days of CWL ending, because the API drops the data after that. If you miss the window, import the ClashPerk `/export cwl` sheets instead.
 4. Open the season, then each clan. Link missing Discord IDs, set PN or guest, and tick recipients. Use **Transfer to** to move a bonus to an alt.

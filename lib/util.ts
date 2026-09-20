@@ -39,6 +39,15 @@ export function seasonEnd(year: number, month0: number): Date {
   return last;
 }
 
+/**
+ * The API reports a CWL season as the group's start date (e.g. "2026-09-01"), and groups
+ * can start on different days — so we key seasons by month only.
+ */
+export function cwlSeasonId(apiSeason: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(String(apiSeason ?? "").trim());
+  return m ? `${m[1]}-${m[2]}` : String(apiSeason ?? "").trim();
+}
+
 export function prevMonth(season: string): string {
   const [y, m] = season.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 2, 1));

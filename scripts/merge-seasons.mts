@@ -1,7 +1,6 @@
-/**
- * Merges one season into another, keeping every row.
- * Usage: npx tsx scripts/merge-seasons.mts <from-season-id> <into-season-id>
- * Example: npx tsx scripts/merge-seasons.mts 2026-09-02 2026-09
+/*
+ * Merge one season into another, keeping every row.
+ * npx tsx scripts/merge-seasons.mts 2026-09-02 2026-09
  */
 import { sql } from "drizzle-orm";
 import { getDb } from "../lib/db";
@@ -25,7 +24,7 @@ await db.execute(sql`
   on conflict (id) do update set has_cwl_data = true
 `);
 
-// Tables keyed only by season: move rows, skipping any that already exist in the target.
+// Move rows across, skipping ones the target season already has.
 for (const [table, keys] of [
   ["cwl_clan_seasons", ["season_id", "clan_tag"]],
   ["cwl_roster", ["season_id", "clan_tag", "player_tag"]],

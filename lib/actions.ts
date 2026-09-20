@@ -33,7 +33,7 @@ async function run(fn: () => Promise<string | ActionResult>): Promise<ActionResu
   }
 }
 
-// ---------------- auth ----------------
+// --- auth
 
 export async function login(_: unknown, form: FormData): Promise<ActionResult> {
   const pw = process.env.ADMIN_PASSWORD;
@@ -54,7 +54,7 @@ export async function logout() {
   redirect("/login");
 }
 
-// ---------------- clans ----------------
+// --- clans
 
 export async function addClan(input: { tag: string; cwlType: string; isAlliance: boolean }) {
   return run(async () => {
@@ -90,7 +90,7 @@ export async function deleteClan(tag: string) {
   });
 }
 
-// ---------------- players ----------------
+// --- players
 
 export async function savePlayer(input: {
   tag: string;
@@ -129,7 +129,7 @@ export async function deletePlayer(tag: string) {
   });
 }
 
-// ---------------- sync ----------------
+// --- sync
 
 export async function syncClan(tag: string) {
   return run(async () => {
@@ -160,7 +160,6 @@ export async function saveDonationsNow() {
   });
 }
 
-/** Season stats for every family-clan member plus tracked players (attack wins, donations, received). */
 export async function refreshPlayerStats() {
   return run(async () => {
     const r = await snapshotPlayerStats();
@@ -168,7 +167,6 @@ export async function refreshPlayerStats() {
   });
 }
 
-/** Follow a player who is not in a family clan, by tag. */
 export async function trackPlayer(rawTag: string) {
   return run(async () => {
     const tag = normTag(rawTag);
@@ -199,7 +197,7 @@ export async function setTracked(tag: string, tracked: boolean) {
   });
 }
 
-// ---------------- board editing ----------------
+// --- bonus board
 
 type PartPatch = Partial<{
   selected: boolean;
@@ -245,7 +243,7 @@ export async function setBonusOverride(seasonId: string, clanTag: string, value:
   });
 }
 
-// ---------------- seasons ----------------
+// --- seasons
 
 export async function createSeason(input: { id: string; label?: string; sortKey?: string; donationSeason?: string }) {
   return run(async () => {
@@ -283,7 +281,6 @@ export async function addClanToSeason(seasonId: string, clanTag: string) {
   });
 }
 
-/** Writes this season's selected players into bonus history (credited to the member, even if transferred). */
 export async function finalizeSeason(seasonId: string) {
   return run(async () => {
     const db = await getDb();
@@ -302,7 +299,7 @@ export async function finalizeSeason(seasonId: string) {
       await db
         .insert(s.bonusHistory)
         .values([...values.values()])
-        // A pick wins over a mark imported for the same member and season.
+        // A pick beats whatever the import said for that member.
         .onConflictDoUpdate({
           target: [s.bonusHistory.seasonId, s.bonusHistory.memberKey],
           set: { playerTag: sql`excluded.player_tag`, source: "app" },
@@ -312,11 +309,8 @@ export async function finalizeSeason(seasonId: string) {
   });
 }
 
-/**
- * Ticks the players whose bonus is already recorded in history for this season —
- * used after importing a season you decided by hand. One account per member:
- * the main account, then most attacks, then most donations.
- */
+// For a season that was decided by hand and imported, tick the players it names.
+// One account per member: main first, then most attacks, then most donations.
 export async function applyRecordedBonuses(seasonId: string) {
   return run(async () => {
     const db = await getDb();
@@ -329,7 +323,7 @@ export async function applyRecordedBonuses(seasonId: string) {
 
     const clans = await seasonOverview(seasonId);
     const best = new Map<string, { clanTag: string; playerTag: string; rank: number[] }>();
-    // Higher is better, compared left to right.
+    // biggest wins, left to right
     const better = (a: number[], b: number[]) => {
       const i = a.findIndex((v, k) => v !== b[k]);
       return i >= 0 && a[i] > b[i];
@@ -380,7 +374,7 @@ export async function deleteSeason(seasonId: string) {
   });
 }
 
-// ---------------- imports ----------------
+// --- imports
 
 export async function previewSheet(source: string) {
   try {
@@ -411,7 +405,7 @@ export async function doImportPlayers(source: string) {
   return run(() => importPlayers(source));
 }
 
-// ---------------- settings & export ----------------
+// --- settings and export
 
 export async function saveSetting(key: string, value: string) {
   return run(async () => {

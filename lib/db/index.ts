@@ -15,13 +15,13 @@ async function create(): Promise<DB> {
     const { default: postgres } = await import("postgres");
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
-    // prepare:false keeps it compatible with Supabase's transaction pooler.
+    // Supabase's transaction pooler can't do prepared statements.
     const client = postgres(url, { prepare: false, max: 5 });
     const db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: MIGRATIONS });
     return db as unknown as DB;
   }
-  // Local development without a DATABASE_URL: embedded Postgres stored in ./.data
+  // No DATABASE_URL means local dev, so run Postgres in-process out of ./.data
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");

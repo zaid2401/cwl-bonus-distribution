@@ -25,7 +25,7 @@ export async function getSeason(id: string): Promise<Season | undefined> {
   return row;
 }
 
-/** Up to 6 seasons before `season`, most recent first. */
+// Up to 6 seasons before `season`, most recent first.
 export async function previousSeasons(db: DB, season: Season): Promise<Season[]> {
   return db
     .select()
@@ -126,12 +126,12 @@ export interface BoardRow {
   backToBack: boolean;
   eligible: boolean;
   selected: boolean;
-  /** Already in bonus history for THIS season (e.g. imported from the old sheet). */
+  // Already in bonus history for this season, e.g. imported from the old sheet.
   recorded: boolean;
   transferToTag: string | null;
   remark: string | null;
   otherAccounts: { tag: string; name: string }[];
-  /** Selected in another clan this season (same member). */
+  // Selected in another clan this season (same member).
   selectedElsewhere: string | null;
 }
 
@@ -186,7 +186,6 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     .from(s.participants)
     .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.clanTag, clanTag)));
 
-  // Collect every player that belongs on this board.
   const names = new Map<string, { name: string; th: number | null }>();
   for (const r of roster) names.set(r.playerTag, { name: r.name, th: r.townhall });
   for (const m of warMembers) names.set(m.playerTag, { name: m.name, th: m.townhall ?? names.get(m.playerTag)?.th ?? null });
@@ -196,13 +195,13 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
   const playerRows = tags.length ? await db.select().from(s.players).where(inArray(s.players.tag, tags)) : [];
   const playerBy = new Map(playerRows.map((p) => [p.tag, p]));
 
-  // Other accounts of the same Discord members (for transfers).
+  // Their other accounts, for bonus transfers.
   const discordIds = [...new Set(playerRows.map((p) => p.discordId).filter(Boolean) as string[])];
   const siblings = discordIds.length
     ? await db.select().from(s.players).where(inArray(s.players.discordId, discordIds))
     : [];
 
-  // Donations for the season used by this CWL.
+  // Donations from the season this CWL scores on.
   const donationSeason = season.donationSeason ?? "";
   const dons = tags.length
     ? await db
@@ -217,7 +216,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     else if (!cur?.imported)
       donBy.set(d.playerTag, { donated: (cur?.donated ?? 0) + d.donated, received: (cur?.received ?? 0) + d.received, imported: false });
   }
-  // Per-player season stats cover players who changed or left a clan; a sheet import still wins.
+  // Player stats catch anyone who switched clans mid-season. An import still wins.
   const stats = tags.length
     ? await db
         .select()
@@ -234,13 +233,12 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     });
   }
 
-  // Bonus history in the 6 previous seasons.
   const prevSeasons = await previousSeasons(db, season);
   const prevIds = prevSeasons.map((p) => p.id);
   const hist = prevIds.length
     ? await db.select().from(s.bonusHistory).where(inArray(s.bonusHistory.seasonId, prevIds))
     : [];
-  // Bonuses already recorded for this season (imported, or written by an earlier finalize).
+  // Already in history for this season: imported, or from an earlier finalize.
   const recordedKeys = new Set(
     (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map((h) => h.memberKey),
   );
@@ -250,7 +248,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     histBy.get(h.seasonId)!.add(h.memberKey);
   }
 
-  // Selections in other clans this season (to warn about double bonuses for one member).
+  // Picks in other clans, so we can warn about giving one member two bonuses.
   const otherSelected = await db
     .select({ p: s.participants, pl: s.players })
     .from(s.participants)
@@ -318,7 +316,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     };
   });
 
-  // Eligible first (by donations), then everyone else by attacks, then donations.
+  // Eligible first by donations, then the rest by attacks.
   rows.sort(
     (a, b) =>
       Number(b.eligible) - Number(a.eligible) ||

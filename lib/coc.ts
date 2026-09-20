@@ -38,7 +38,6 @@ export async function coc<T>(path: string): Promise<T> {
 
 export const enc = (tag: string) => encodeURIComponent(tag);
 
-/** Run tasks with limited concurrency. */
 export async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let i = 0;
@@ -53,7 +52,7 @@ export async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Pro
   return out;
 }
 
-// ---- API types (only the fields we use) ----
+// Only the response fields we actually read.
 
 export interface ApiMember {
   tag: string;

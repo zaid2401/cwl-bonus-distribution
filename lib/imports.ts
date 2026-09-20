@@ -11,7 +11,6 @@ export interface HistoryColumn {
   sortKey: string;
 }
 
-/** Bonus history: first matching column is Discord ID (or player tag); each mapped column is one season. */
 export async function importHistory(source: string, idColumn: number, columns: HistoryColumn[]) {
   const db = await getDb();
   const [, ...rows] = await loadRows(source);
@@ -36,7 +35,7 @@ export async function importHistory(source: string, idColumn: number, columns: H
   return `Imported ${marks} bonus marks across ${columns.filter((c) => c.seasonId.trim()).length} season(s).`;
 }
 
-/** ClashPerk "/export season" (or any sheet with Tag + Total Donated). */
+// ClashPerk /export season, or any sheet with Tag and Total Donated.
 export async function importDonations(source: string, season: string, updateLinks: boolean) {
   const db = await getDb();
   const [header, ...rows] = await loadRows(source);
@@ -84,7 +83,7 @@ export async function importDonations(source: string, season: string, updateLink
         target: s.players.tag,
         set: {
           name: sql`case when excluded.name <> '' then excluded.name else ${s.players.name} end`,
-          // Only fill links that are empty — never overwrite your manual edits.
+          // Never clobber a link that was set by hand.
           discordId: sql`coalesce(${s.players.discordId}, excluded.discord_id)`,
           discordUsername: sql`coalesce(${s.players.discordUsername}, excluded.discord_username)`,
         },
@@ -93,7 +92,7 @@ export async function importDonations(source: string, season: string, updateLink
   return `Imported donations for ${entries.length} players into season ${season}.`;
 }
 
-/** ClashPerk "/export cwl" sheet for one clan — fallback when API war data is missing. */
+// Fallback for when the API has already dropped the war data.
 export async function importCwlExport(source: string, seasonId: string, clanTag: string) {
   const db = await getDb();
   const [header, ...rows] = await loadRows(source);
@@ -130,7 +129,6 @@ export async function importCwlExport(source: string, seasonId: string, clanTag:
   return `Imported ${n} players for ${clan?.name || clanTag}.`;
 }
 
-/** Player links: Tag + Discord ID / Username / PN / Guest. Non-empty cells overwrite. */
 export async function importPlayers(source: string) {
   const db = await getDb();
   const [header, ...rows] = await loadRows(source);

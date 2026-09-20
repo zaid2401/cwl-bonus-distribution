@@ -70,7 +70,7 @@ function HistoryImport() {
           let seasonId = g?.id ?? "";
           let sortKey = g?.sortKey ?? "";
           if (g) {
-            // Several events in one month: 2026-06, 2026-06-2 … with increasing order dates.
+            // Two events in one month become 2026-06 and 2026-06-2.
             const c = (seen.get(g.id) ?? 0) + 1;
             seen.set(g.id, c);
             if (c > 1) {
@@ -78,7 +78,7 @@ function HistoryImport() {
               sortKey = `${g.id}-${String(Math.max(c, Number(g.sortKey.slice(8)))).padStart(2, "0")}`;
             }
           }
-          // The current month is the season being decided in the app — don't import it as history by default.
+          // The current month is the one being decided in the app, so leave it off by default.
           return { index, on: Boolean(g) && index !== id && g!.id < current, seasonId, label: g ? seasonLabel(seasonId) : h.trim(), sortKey };
         }),
       );

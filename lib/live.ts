@@ -2,7 +2,6 @@ import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import { REQUIRED_ATTACKS, warResult } from "./logic";
 
-/** Donation totals per player for a game season. An IMPORT row wins over API snapshots. */
 export async function donationTotals(db: DB, season: string, tags?: string[]) {
   const rows = await db
     .select()
@@ -28,7 +27,7 @@ export async function donationTotals(db: DB, season: string, tags?: string[]) {
   return out;
 }
 
-// ---------------- CWL attacks, round by round ----------------
+// --- CWL attacks, round by round
 
 export type CellState = "hit" | "missed" | "pending" | "prep" | "out";
 
@@ -133,7 +132,7 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
       if (hit) return { state: "hit", stars: hit.stars, destruction: hit.destruction, defenderPosition: hit.defenderPosition, position: pos };
       if (pos == null) return { state: "out" };
       const warState = stateOfRound.get(round);
-      // A war still in preparation cannot be attacked yet, so it is not an open attack.
+      // Prep day: nothing is due yet, so it isn't an open attack.
       return { state: warState === "warEnded" ? "missed" : warState === "preparation" ? "prep" : "pending", position: pos };
     });
     return {
@@ -196,7 +195,6 @@ export async function attacksOverview(seasonId: string): Promise<AttackSummary[]
   return out;
 }
 
-/** Totals across alliance clans for a season. */
 export async function donationSummary(season: string) {
   const db = await getDb();
   const [row] = await db

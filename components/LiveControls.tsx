@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Result, useAction } from "./ActionButton";
 import type { ActionResult } from "@/lib/actions";
 
-/** Refresh button + optional auto-refresh, with a "last updated" note. */
 export function LiveControls({
   action,
   label,

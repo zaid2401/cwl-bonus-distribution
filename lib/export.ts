@@ -4,7 +4,6 @@ import { REQUIRED_ATTACKS } from "./logic";
 import { getDb, schema as s } from "./db";
 import { eq } from "drizzle-orm";
 
-/** Builds the season sheet in the same layout as the original "Combined" sheet. */
 export async function buildSeasonExport(seasonId: string): Promise<SheetExport> {
   const db = await getDb();
   const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { trackPlayer } from "@/lib/actions";
 import { Result, useAction } from "./ActionButton";
 
-/** Follow a player who is not in one of your family clans. */
 export function TrackPlayer() {
   const [tag, setTag] = useState("");
   const { pending, result, exec } = useAction();

@@ -11,12 +11,10 @@ export interface StatRow {
   received: number;
   net: number;
   ratio: number | null;
-  /** Every multiplayer win this season, ranked and unranked. */
   attacks: number;
-  /** Ranked-only wins, as the game's own counter reports them. */
   attackWins: number;
   defenseWins: number;
-  /** False when the season started before tracking began, so attacks are partial. */
+  // false while a season is only partly covered by tracking.
   attacksComplete: boolean;
   trophies: number | null;
   townhall: number | null;
@@ -35,7 +33,6 @@ export interface StatsBoard {
   totals: { players: number; donated: number; received: number; attacks: number; rankedWins: number };
 }
 
-/** Game seasons (the ones that reset with donations) we hold any data for. */
 export async function statsSeasons(): Promise<string[]> {
   const db = await getDb();
   const a = await db.selectDistinct({ season: s.playerStats.season }).from(s.playerStats);
@@ -43,11 +40,8 @@ export async function statsSeasons(): Promise<string[]> {
   return [...new Set([...a, ...b].map((r) => r.season))].sort().reverse();
 }
 
-/**
- * One row per player for a game season. Attack wins come from the per-player
- * snapshot; donations fall back to clan snapshots or a sheet import when that
- * season pre-dates player tracking.
- */
+// Donations fall back to the old clan snapshots for seasons we tracked before
+// player stats existed.
 export async function statsBoard(season: string): Promise<StatsBoard> {
   const db = await getDb();
   const stats = await db.select().from(s.playerStats).where(eq(s.playerStats.season, season)).orderBy(desc(s.playerStats.donated));

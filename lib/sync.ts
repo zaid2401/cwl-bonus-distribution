@@ -89,7 +89,6 @@ async function saveWar(db: DB, seasonId: string, round: number, warTag: string, 
   if (attacks.length) await db.insert(s.cwlAttacks).values(attacks).onConflictDoNothing();
 }
 
-/** Fetch the league group and all wars for one of your CWL clans. */
 export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
   const db = await getDb();
   let group: ApiLeagueGroup;
@@ -174,7 +173,6 @@ async function upsertPlayerNames(db: DB, members: { tag: string; name: string }[
     .onConflictDoUpdate({ target: s.players.tag, set: { name: sql`excluded.name` } });
 }
 
-/** Save current-season donations for all alliance clans (keeps the highest value seen). */
 export async function snapshotDonations(now = new Date()): Promise<SyncResult[]> {
   const db = await getDb();
   const season = gameSeasonAt(now);
@@ -211,10 +209,8 @@ export async function snapshotDonations(now = new Date()): Promise<SyncResult[]>
   });
 }
 
-/**
- * Lifetime "Conqueror" achievement — every multiplayer battle won, ranked or not.
- * The player object's attackWins only counts ranked wins, so it is kept separately.
- */
+// attackWins on the player object only counts ranked battles. The Conqueror
+// achievement counts all of them, so we diff that instead.
 function conquerorValue(p: ApiPlayer): number | null {
   const a = p.achievements?.find((x) => x.name === "Conqueror") ?? p.achievements?.find((x) => /Multiplayer battles$/i.test(x.info ?? ""));
   return a ? a.value : null;
@@ -228,12 +224,8 @@ export interface StatsSyncResult {
   message: string;
 }
 
-/**
- * Season stats per player: multiplayer attack wins, donations and received.
- * Covers every member of a family clan plus any player marked as tracked.
- * Values only grow during a season, so we keep the highest value seen — that
- * survives a player leaving a clan, and captures the final numbers before reset.
- */
+// One request per player, because the clan members endpoint has no attack counts.
+// Keeping the highest value seen means a player who leaves a clan keeps their totals.
 export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncResult> {
   const db = await getDb();
   const season = gameSeasonAt(now);
@@ -254,7 +246,7 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
   if (!tags.size)
     return { ok: false, season, players: 0, failed: 0, message: "No players found. Add family clans, or track players by tag." };
 
-  // Where each player's season currently stands, plus their last known lifetime total.
+  // What we already have for this season, and where Conqueror stood before it.
   const existing = await db.select().from(s.playerStats).where(eq(s.playerStats.season, season));
   const existingBy = new Map(existing.map((r) => [r.playerTag, r]));
   const carried = await db.execute(sql`
@@ -277,7 +269,7 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
       const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
       const total = conquerorValue(p);
       const prev = existingBy.get(p.tag);
-      // Baseline: where the season ended last time; otherwise this first reading.
+      // Carry the baseline over from last season, or start it here.
       const base = prev?.attacksBase ?? carriedBy.get(p.tag) ?? total ?? null;
       rows.push({
         season,
@@ -314,7 +306,7 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
           received: sql`greatest(${s.playerStats.received}, excluded.received)`,
           attackWins: sql`greatest(${s.playerStats.attackWins}, excluded.attack_wins)`,
           attacksTotal: sql`greatest(coalesce(${s.playerStats.attacksTotal}, 0), coalesce(excluded.attacks_total, 0))`,
-          // The baseline is set once per season and never moves.
+          // Set once per season, never moved.
           attacksBase: sql`coalesce(${s.playerStats.attacksBase}, excluded.attacks_base)`,
           defenseWins: sql`greatest(${s.playerStats.defenseWins}, excluded.defense_wins)`,
           trophies: sql`excluded.trophies`,

@@ -1,4 +1,3 @@
-/** Minimal RFC 4180 CSV parser. */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -46,7 +45,6 @@ export function toCsv(rows: (string | number | boolean | null | undefined)[][]):
     .join("\r\n");
 }
 
-/** Find a column index by any of the candidate header names (case-insensitive). */
 export function findCol(header: string[], candidates: string[]): number {
   const norm = header.map((h) => h.trim().toLowerCase());
   for (const c of candidates) {

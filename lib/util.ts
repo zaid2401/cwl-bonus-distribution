@@ -1,4 +1,4 @@
-/** Normalise a player/clan tag: uppercase, '#' prefix, O→0 (common typo). */
+// Tags have no letter O, so anyone typing one meant a zero.
 export function normTag(raw: string | null | undefined): string {
   const t = String(raw ?? "")
     .trim()
@@ -9,16 +9,12 @@ export function normTag(raw: string | null | undefined): string {
   return t ? `#${t}` : "";
 }
 
-/** Tag safe for URLs (no '#'). */
 export const tagSlug = (tag: string) => tag.replace(/^#/, "");
 export const slugTag = (slug: string) => normTag(decodeURIComponent(slug));
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/**
- * Game (donation) season id for a moment in time.
- * A season ends on the last Monday of the month at 05:00 UTC.
- */
+// Seasons end on the last Monday of the month, 05:00 UTC.
 export function gameSeasonAt(d: Date): string {
   let y = d.getUTCFullYear();
   let m = d.getUTCMonth();
@@ -39,10 +35,8 @@ export function seasonEnd(year: number, month0: number): Date {
   return last;
 }
 
-/**
- * The API reports a CWL season as the group's start date (e.g. "2026-09-01"), and groups
- * can start on different days — so we key seasons by month only.
- */
+// The API hands back the league group's start date, and groups don't all start on
+// the same day, so key seasons by month or the same CWL splits in two.
 export function cwlSeasonId(apiSeason: string): string {
   const m = /^(\d{4})-(\d{2})/.exec(String(apiSeason ?? "").trim());
   return m ? `${m[1]}-${m[2]}` : String(apiSeason ?? "").trim();
@@ -60,7 +54,7 @@ export function seasonLabel(season: string): string {
   return `${MONTHS[Number(m[2]) - 1] ?? m[2]} ${m[1]}${m[3] ? " " + m[3].replace(/^[-_]/, "#") : ""}`;
 }
 
-/** Best-effort guess of a season id from a sheet header like "MAY", "JULY", "6/1/2026", "2026-06-01". */
+// Sheet headers come in every shape: "MAY", "JULY", "6/1/2026", "2026-06-01".
 export function guessSeasonFromHeader(header: string, now = new Date()): { id: string; sortKey: string } | null {
   const h = header.trim();
   const iso = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/.exec(h);

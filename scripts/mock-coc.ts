@@ -10,7 +10,7 @@ const CLAN_TAGS = ["#2QQ8PL", "#2QQ8PC", "#2QQ8PJ", "#2QQ8PG", "#2QQ8PR", "#2QQ8
 const SEASON = "2026-09";
 const SIZE = 15;
 const LAST_ROUND_LIVE = process.env.MOCK_LIVE === "1";
-// GET /bump/<n> raises every player's lifetime Conqueror value, to simulate battles being won.
+// GET /bump/<n> bumps everyone's Conqueror value, to fake battles being won.
 let bump = 0;
 
 const clans = CLAN_TAGS.map((tag, ci) => ({
@@ -23,7 +23,7 @@ const clans = CLAN_TAGS.map((tag, ci) => ({
   })),
 }));
 
-// Round-robin schedule for 8 clans over 7 rounds.
+// round robin, 8 clans over 7 rounds
 const rounds: { warTags: string[] }[] = [];
 const wars = new Map<string, unknown>();
 const order = [...clans.keys()];
@@ -37,7 +37,7 @@ for (let r = 0; r < 7; r++) {
     const side = (c: typeof a, opp: typeof a) => {
       const lineup = c.members.slice(0, SIZE);
       const members = lineup.map((m, i) => {
-        // Hero3 misses round 2; Hero5 hits low bases late (star-steal); others hit mirror
+        // Hero3 misses a round, Hero5 farms low bases late, everyone else hits their mirror
         const miss = (m.name === "Hero3" && r === 1) || (m.name === "Late2" && r > 3) || rnd() < 0.03;
         let def = i;
         if (m.name === "Hero5" && r >= 4) def = SIZE - 1;
@@ -53,7 +53,7 @@ for (let r = 0; r < 7; r++) {
       const stars = members.reduce((n, m) => n + (m.attacks[0]?.stars ?? 0), 0);
       return { tag: c.tag, name: c.name, stars, destructionPercentage: 60 + pick(40), members };
     };
-    // Last round is still in war
+    // last round is still running
     wars.set(tag, { state: r === 6 && LAST_ROUND_LIVE ? "inWar" : "warEnded", teamSize: SIZE, clan: side(a, b), opponent: side(b, a) });
   }
   rounds.push({ warTags: tags });
@@ -96,7 +96,7 @@ http
       const mem = home?.members.find((x) => x.tag === m![1]);
       const i = home ? home.members.indexOf(mem!) : 0;
       if (!mem) {
-        // An "outside" player, used to test tracking someone who is not in a family clan.
+        // someone outside the family, for testing tracked players
         if (!/^#GUEST/.test(m[1])) return json(res, 404, { reason: "notFound" });
         return json(res, 200, { achievements: [{ name: "Conqueror", value: 1500 + bump, info: "Win 5000 Multiplayer battles" }], tag: m[1], name: "Outsider", townHallLevel: 16, trophies: 5200, attackWins: 41, defenseWins: 9, donations: 3300, donationsReceived: 1200, clan: { tag: "#OTHER", name: "Some Other Clan" } });
       }

@@ -45,19 +45,19 @@ test("star steal: only flagged after 8 stars and hitting a lower base", () => {
     defenderPosition: def,
     stars,
   });
-  // 3+3 = 6 stars, then lower base (not flagged: under 8), reaching 9
-  // round 4 lower base with 9 stars -> flagged; round 5 mirror -> fine; round 6 higher base -> fine
+  // under 8 stars, so hitting a low base is fine
+  // past 8 stars, the low base in round 4 gets flagged
   const flags = starStealFlags([a(6, 2, 2), a(1, 5, 3), a(2, 8, 3), a(3, 9, 3), a(4, 10, 3), a(5, 5, 2)]);
   assert.deepEqual(
     flags.map((f) => [f.round, f.starsBefore]),
     [[4, 9]],
   );
-  // exactly 8 before the attack counts
+  // exactly 8 counts too
   assert.equal(starStealFlags([a(1, 1, 3), a(2, 1, 3), a(3, 1, 2), a(4, 6, 3)]).length, 1);
 });
 
 test("season helpers", () => {
-  // Last Monday of Aug 2026 is Aug 31 → reset at 05:00 UTC
+  // Aug 2026 resets on Monday the 31st at 05:00 UTC
   assert.equal(gameSeasonAt(new Date("2026-08-31T04:59:00Z")), "2026-08");
   assert.equal(gameSeasonAt(new Date("2026-08-31T05:00:00Z")), "2026-09");
   assert.equal(gameSeasonAt(new Date("2026-12-28T06:00:00Z")), "2027-01");
@@ -68,7 +68,7 @@ test("season helpers", () => {
 });
 
 test("CWL season id is keyed by month, whatever start date the API reports", () => {
-  // Groups start on different days, so the API's season differs between clans.
+  // groups start on different days, so clans report different season strings
   assert.equal(cwlSeasonId("2026-09-01"), "2026-09");
   assert.equal(cwlSeasonId("2026-09-02"), "2026-09");
   assert.equal(cwlSeasonId("2026-09"), "2026-09");

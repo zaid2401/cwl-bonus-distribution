@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { parseCsv } from "./csv";
 
-/** Accepts a Google Sheet link (shared "Anyone with the link") or raw CSV text. */
 export async function loadRows(source: string): Promise<string[][]> {
   const src = source.trim();
   if (!src) throw new Error("Paste a Google Sheet link or CSV text.");
@@ -22,7 +21,7 @@ function clean(rows: string[][]) {
   return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
-// ---------------- Google Sheets export (service account) ----------------
+// --- Sheets export, via a service account
 
 async function accessToken(): Promise<string> {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -51,9 +50,7 @@ async function accessToken(): Promise<string> {
 export interface SheetExport {
   title: string;
   rows: (string | number | boolean)[][];
-  /** 0-based row indexes (in rows) to highlight green. */
   greenRows: number[];
-  /** 0-based row indexes to highlight gold (bonus recipients). */
   goldRows: number[];
 }
 

@@ -1,5 +1,3 @@
-/** Pure bonus logic — no database access, unit tested. */
-
 export const BASE_BONUS = 6;
 export const REQUIRED_ATTACKS = 7;
 export const STAR_REQUIREMENT = 8;
@@ -18,7 +16,7 @@ export interface WarRow {
   opponentDestruction: number;
 }
 
-/** Result from `ourTag`'s point of view. Only ended wars count. More stars wins, then higher destruction. */
+// More stars wins; equal stars go to the higher destruction.
 export function warResult(w: WarRow, ourTag: string): WarResult {
   if (w.state !== "warEnded") return null;
   const ours = w.clanTag === ourTag;
@@ -51,10 +49,8 @@ export interface StarStealFlag {
   starsBefore: number;
 }
 
-/**
- * Replays a player's attacks in order. Once they already have 8+ stars,
- * any attack on a base numbered below their own war position (a higher number) is flagged.
- */
+// Star stealing: once a player has their 8 stars, hitting a base below their own
+// war position (a bigger number) is a farm hit, not a real attack.
 export function starStealFlags(attacks: AttackRow[]): StarStealFlag[] {
   const sorted = [...attacks].sort((a, b) => a.round - b.round || a.order - b.order);
   const flags: StarStealFlag[] = [];
@@ -78,7 +74,6 @@ export function memberKey(discordId: string | null | undefined, tag: string): st
   return discordId?.trim() ? discordId.trim() : `tag:${tag}`;
 }
 
-/** How many of the given previous seasons (already limited to the window) this member got a bonus in. */
 export function recentBonusCount(member: string, prevSeasonIds: string[], history: Map<string, Set<string>>): number {
   return prevSeasonIds.filter((s) => history.get(s)?.has(member)).length;
 }

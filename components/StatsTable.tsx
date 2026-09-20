@@ -8,12 +8,12 @@ import { useAction } from "./ActionButton";
 export type StatsView = "both" | "donations" | "attacks";
 
 const n = (v: number) => v.toLocaleString();
-type SortKey = "donated" | "received" | "net" | "ratio" | "attackWins" | "defenseWins" | "trophies" | "name";
+type SortKey = "donated" | "received" | "net" | "ratio" | "attacks" | "attackWins" | "defenseWins" | "trophies" | "name";
 
 export function StatsTable({ rows, clans, view }: { rows: StatRow[]; clans: { tag: string; name: string }[]; view: StatsView }) {
   const [q, setQ] = useState("");
   const [clan, setClan] = useState("");
-  const [sort, setSort] = useState<SortKey>(view === "attacks" ? "attackWins" : "donated");
+  const [sort, setSort] = useState<SortKey>(view === "attacks" ? "attacks" : "donated");
   const { pending, exec } = useAction();
 
   const visible = useMemo(() => {
@@ -71,7 +71,8 @@ export function StatsTable({ rows, clans, view }: { rows: StatRow[]; clans: { ta
               {showRec && <Header k="received" label="Received" />}
               {showRec && <Header k="net" label="Net" />}
               {showRec && <Header k="ratio" label="Ratio" />}
-              {showAtk && <Header k="attackWins" label="Attack wins" />}
+              {showAtk && <Header k="attacks" label="Attacks" />}
+              {view === "attacks" && <Header k="attackWins" label="Ranked only" />}
               {view === "attacks" && <Header k="defenseWins" label="Defense wins" />}
               {view === "attacks" && <Header k="trophies" label="Trophies" />}
               <th className="th">Discord</th>
@@ -105,7 +106,13 @@ export function StatsTable({ rows, clans, view }: { rows: StatRow[]; clans: { ta
                   </td>
                 )}
                 {showRec && <td className="td text-right tabular-nums">{r.ratio == null ? "—" : r.ratio.toFixed(2)}</td>}
-                {showAtk && <td className="td text-right font-medium tabular-nums">{n(r.attackWins)}</td>}
+                {showAtk && (
+                  <td className="td text-right font-medium tabular-nums" title={r.attacksComplete ? "Ranked and unranked multiplayer wins" : "Counted from the first refresh of this season"}>
+                    {n(r.attacks)}
+                    {!r.attacksComplete && <span className="text-muted">*</span>}
+                  </td>
+                )}
+                {view === "attacks" && <td className="td text-right tabular-nums text-muted">{n(r.attackWins)}</td>}
                 {view === "attacks" && <td className="td text-right tabular-nums text-muted">{n(r.defenseWins)}</td>}
                 {view === "attacks" && <td className="td text-right tabular-nums text-muted">{r.trophies == null ? "—" : n(r.trophies)}</td>}
                 <td className="td text-xs">
@@ -136,9 +143,11 @@ export function StatsTable({ rows, clans, view }: { rows: StatRow[]; clans: { ta
           </tbody>
         </table>
       </div>
-      {view !== "attacks" && (
-        <p className="text-xs text-muted">Attack wins are only recorded from the moment player tracking runs — older seasons show donations only.</p>
-      )}
+      <p className="text-xs text-muted">
+        <b>Attacks</b> counts every multiplayer win, ranked and unranked, from the lifetime “Conqueror” counter. <b>Ranked only</b> is the
+        game&apos;s own attack-wins number, which ignores unranked battles. A season only counts from its first refresh, so partial seasons
+        are marked with *.
+      </p>
     </div>
   );
 }

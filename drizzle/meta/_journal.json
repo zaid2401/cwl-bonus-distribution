@@ -36,6 +36,13 @@
       "when": 1789946252630,
       "tag": "0004_player_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789947640116,
+      "tag": "0005_attacks_total",
+      "breakpoints": true
     }
   ]
 }

@@ -211,6 +211,15 @@ export async function snapshotDonations(now = new Date()): Promise<SyncResult[]>
   });
 }
 
+/**
+ * Lifetime "Conqueror" achievement — every multiplayer battle won, ranked or not.
+ * The player object's attackWins only counts ranked wins, so it is kept separately.
+ */
+function conquerorValue(p: ApiPlayer): number | null {
+  const a = p.achievements?.find((x) => x.name === "Conqueror") ?? p.achievements?.find((x) => /Multiplayer battles$/i.test(x.info ?? ""));
+  return a ? a.value : null;
+}
+
 export interface StatsSyncResult {
   ok: boolean;
   season: string;
@@ -245,11 +254,31 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
   if (!tags.size)
     return { ok: false, season, players: 0, failed: 0, message: "No players found. Add family clans, or track players by tag." };
 
+  // Where each player's season currently stands, plus their last known lifetime total.
+  const existing = await db.select().from(s.playerStats).where(eq(s.playerStats.season, season));
+  const existingBy = new Map(existing.map((r) => [r.playerTag, r]));
+  const carried = await db.execute(sql`
+    select distinct on (player_tag) player_tag, attacks_total
+    from player_stats
+    where season < ${season} and attacks_total is not null
+    order by player_tag, season desc
+  `);
+  const carriedBy = new Map(
+    (((carried as { rows?: { player_tag: string; attacks_total: number }[] }).rows ?? []) as {
+      player_tag: string;
+      attacks_total: number;
+    }[]).map((r) => [r.player_tag, Number(r.attacks_total)]),
+  );
+
   let failed = 0;
   const rows: (typeof s.playerStats.$inferInsert)[] = [];
   await pool([...tags], 8, async (tag) => {
     try {
       const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
+      const total = conquerorValue(p);
+      const prev = existingBy.get(p.tag);
+      // Baseline: where the season ended last time; otherwise this first reading.
+      const base = prev?.attacksBase ?? carriedBy.get(p.tag) ?? total ?? null;
       rows.push({
         season,
         playerTag: p.tag,
@@ -260,6 +289,8 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
         received: p.donationsReceived ?? 0,
         attackWins: p.attackWins ?? 0,
         defenseWins: p.defenseWins ?? 0,
+        attacksTotal: total,
+        attacksBase: base,
         trophies: p.trophies ?? null,
         townhall: p.townHallLevel ?? null,
       });
@@ -282,6 +313,9 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
           donated: sql`greatest(${s.playerStats.donated}, excluded.donated)`,
           received: sql`greatest(${s.playerStats.received}, excluded.received)`,
           attackWins: sql`greatest(${s.playerStats.attackWins}, excluded.attack_wins)`,
+          attacksTotal: sql`greatest(coalesce(${s.playerStats.attacksTotal}, 0), coalesce(excluded.attacks_total, 0))`,
+          // The baseline is set once per season and never moves.
+          attacksBase: sql`coalesce(${s.playerStats.attacksBase}, excluded.attacks_base)`,
           defenseWins: sql`greatest(${s.playerStats.defenseWins}, excluded.defense_wins)`,
           trophies: sql`excluded.trophies`,
           townhall: sql`excluded.townhall`,

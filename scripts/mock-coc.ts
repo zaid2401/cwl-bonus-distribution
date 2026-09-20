@@ -10,6 +10,8 @@ const CLAN_TAGS = ["#2QQ8PL", "#2QQ8PC", "#2QQ8PJ", "#2QQ8PG", "#2QQ8PR", "#2QQ8
 const SEASON = "2026-09";
 const SIZE = 15;
 const LAST_ROUND_LIVE = process.env.MOCK_LIVE === "1";
+// GET /bump/<n> raises every player's lifetime Conqueror value, to simulate battles being won.
+let bump = 0;
 
 const clans = CLAN_TAGS.map((tag, ci) => ({
   tag,
@@ -66,6 +68,10 @@ const json = (res: http.ServerResponse, code: number, body: unknown) => {
 http
   .createServer((req, res) => {
     const url = decodeURIComponent(req.url ?? "");
+    if (url.startsWith("/bump/")) {
+      bump += Number(/^\/bump\/(\d+)/.exec(url)![1]);
+      return json(res, 200, { bump });
+    }
     if (req.headers.authorization !== "Bearer test") return json(res, 403, { reason: "accessDenied", message: "bad token" });
     let m: RegExpExecArray | null;
     if ((m = /^\/v1\/clans\/(#[^/]+)\/currentwar\/leaguegroup/.exec(url))) {
@@ -92,9 +98,13 @@ http
       if (!mem) {
         // An "outside" player, used to test tracking someone who is not in a family clan.
         if (!/^#GUEST/.test(m[1])) return json(res, 404, { reason: "notFound" });
-        return json(res, 200, { tag: m[1], name: "Outsider", townHallLevel: 16, trophies: 5200, attackWins: 41, defenseWins: 9, donations: 3300, donationsReceived: 1200, clan: { tag: "#OTHER", name: "Some Other Clan" } });
+        return json(res, 200, { achievements: [{ name: "Conqueror", value: 1500 + bump, info: "Win 5000 Multiplayer battles" }], tag: m[1], name: "Outsider", townHallLevel: 16, trophies: 5200, attackWins: 41, defenseWins: 9, donations: 3300, donationsReceived: 1200, clan: { tag: "#OTHER", name: "Some Other Clan" } });
       }
       return json(res, 200, {
+        achievements: [
+          { name: "Friend in Need", value: 100000, info: "Donate 25000 capacity worth of reinforcements to Clanmates" },
+          { name: "Conqueror", value: 29000 + i * 10 + bump, info: "Win 5000 Multiplayer battles" },
+        ],
         tag: mem.tag,
         name: mem.name,
         townHallLevel: mem.townHallLevel,
@@ -105,6 +115,10 @@ http
         donationsReceived: 1000 + i * 10,
         clan: { tag: home!.tag, name: home!.name },
       });
+    }
+    if ((m = /^\/bump\/(\d+)/.exec(url))) {
+      bump += Number(m[1]);
+      return json(res, 200, { bump });
     }
     if (url.startsWith("/v1/locations")) return json(res, 200, { items: [{ id: 1 }] });
     json(res, 404, { reason: "notFound", message: url });

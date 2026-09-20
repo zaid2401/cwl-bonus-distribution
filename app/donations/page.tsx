@@ -34,7 +34,7 @@ export default async function StatsPage(props: PageProps<"/donations">) {
           <p className="text-muted">
             Game season {season} — resets with donations, same as the legend season. {board.totals.players} players ·{" "}
             {board.totals.donated.toLocaleString()} donated · {board.totals.received.toLocaleString()} received ·{" "}
-            {board.totals.attacks.toLocaleString()} attack wins
+            {board.totals.attacks.toLocaleString()} attacks ({board.totals.rankedWins.toLocaleString()} ranked)
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

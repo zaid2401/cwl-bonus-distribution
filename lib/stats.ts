@@ -11,8 +11,13 @@ export interface StatRow {
   received: number;
   net: number;
   ratio: number | null;
+  /** Every multiplayer win this season, ranked and unranked. */
+  attacks: number;
+  /** Ranked-only wins, as the game's own counter reports them. */
   attackWins: number;
   defenseWins: number;
+  /** False when the season started before tracking began, so attacks are partial. */
+  attacksComplete: boolean;
   trophies: number | null;
   townhall: number | null;
   discordUsername: string | null;
@@ -27,7 +32,7 @@ export interface StatsBoard {
   rows: StatRow[];
   clans: { tag: string; name: string }[];
   lastUpdated: Date | null;
-  totals: { players: number; donated: number; received: number; attacks: number };
+  totals: { players: number; donated: number; received: number; attacks: number; rankedWins: number };
 }
 
 /** Game seasons (the ones that reset with donations) we hold any data for. */
@@ -72,8 +77,10 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
       received,
       net: donated - received,
       ratio: received > 0 ? donated / received : null,
+      attacks: st?.attacksTotal != null && st.attacksBase != null ? Math.max(0, st.attacksTotal - st.attacksBase) : 0,
       attackWins: st?.attackWins ?? 0,
       defenseWins: st?.defenseWins ?? 0,
+      attacksComplete: st?.attacksBase != null,
       trophies: st?.trophies ?? null,
       townhall: st?.townhall ?? null,
       discordUsername: p?.discordUsername ?? null,
@@ -94,7 +101,8 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
       players: rows.length,
       donated: rows.reduce((n, r) => n + r.donated, 0),
       received: rows.reduce((n, r) => n + r.received, 0),
-      attacks: rows.reduce((n, r) => n + r.attackWins, 0),
+      attacks: rows.reduce((n, r) => n + r.attacks, 0),
+      rankedWins: rows.reduce((n, r) => n + r.attackWins, 0),
     },
   };
 }

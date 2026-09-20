@@ -88,9 +88,16 @@ export interface ApiWar {
   opponent: ApiWarClan;
 }
 
+export interface ApiAchievement {
+  name: string;
+  value: number;
+  info?: string;
+}
+
 export interface ApiPlayer {
   tag: string;
   name: string;
+  achievements?: ApiAchievement[];
   townHallLevel?: number;
   trophies?: number;
   attackWins?: number;

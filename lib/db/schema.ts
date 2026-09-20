@@ -203,8 +203,12 @@ export const playerStats = pgTable(
     clanName: text("clan_name"),
     donated: integer("donated").notNull().default(0),
     received: integer("received").notNull().default(0),
-    /** Multiplayer attack wins this season. */
+    /** Ranked multiplayer wins this season, as the game reports them. */
     attackWins: integer("attack_wins").notNull().default(0),
+    /** Lifetime "Conqueror" achievement: every multiplayer win, ranked or not. */
+    attacksTotal: integer("attacks_total"),
+    /** That lifetime value when this season started, so season attacks = total - base. */
+    attacksBase: integer("attacks_base"),
     defenseWins: integer("defense_wins").notNull().default(0),
     trophies: integer("trophies"),
     townhall: integer("townhall"),

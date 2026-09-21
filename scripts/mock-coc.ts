@@ -3,7 +3,7 @@
 import http from "node:http";
 
 let seed = 42;
-const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const pick = (n: number) => Math.floor(rnd() * n);
 
 const CLAN_TAGS = ["#2QQ8PL", "#2QQ8PC", "#2QQ8PJ", "#2QQ8PG", "#2QQ8PR", "#2QQ8PY", "#2QQ8PU", "#2QQ8PV"];
@@ -17,7 +17,10 @@ const clans = CLAN_TAGS.map((tag, ci) => ({
   tag,
   name: ci === 0 ? "JPA CWL Mock" : ci === 1 ? "JPA CWL Mock 2" : `Enemy ${ci}`,
   members: Array.from({ length: SIZE + 3 }, (_, i) => ({
-    tag: `#${"PLQGRJCUV"[ci]}${"289PYLQGRJCUV"[i % 13]}${"289PYLQGRJCUV"[(i * 7) % 13]}Q${i}`.replace(/1/g, "Y"),
+    tag: `#${"PLQGRJCUV"[ci]}${"289PYLQGRJCUV"[i % 13]}${"289PYLQGRJCUV"[(i * 7) % 13]}Q${i}`.replace(
+      /1/g,
+      "Y",
+    ),
     name: `${ci === 0 ? "Hero" : ci === 1 ? "Late" : "Foe"}${i + 1}`,
     townHallLevel: 17 - (i % 3),
   })),
@@ -47,14 +50,30 @@ for (let r = 0; r < 7; r++) {
           name: m.name,
           townhallLevel: m.townHallLevel,
           mapPosition: i + 1,
-          attacks: miss || (r === 6 && LAST_ROUND_LIVE) ? [] : [{ attackerTag: m.tag, defenderTag: opp.members[def].tag, stars, destructionPercentage: 50 + stars * 15, order: i + 1 }],
+          attacks:
+            miss || (r === 6 && LAST_ROUND_LIVE)
+              ? []
+              : [
+                  {
+                    attackerTag: m.tag,
+                    defenderTag: opp.members[def].tag,
+                    stars,
+                    destructionPercentage: 50 + stars * 15,
+                    order: i + 1,
+                  },
+                ],
         };
       });
       const stars = members.reduce((n, m) => n + (m.attacks[0]?.stars ?? 0), 0);
       return { tag: c.tag, name: c.name, stars, destructionPercentage: 60 + pick(40), members };
     };
     // last round is still running
-    wars.set(tag, { state: r === 6 && LAST_ROUND_LIVE ? "inWar" : "warEnded", teamSize: SIZE, clan: side(a, b), opponent: side(b, a) });
+    wars.set(tag, {
+      state: r === 6 && LAST_ROUND_LIVE ? "inWar" : "warEnded",
+      teamSize: SIZE,
+      clan: side(a, b),
+      opponent: side(b, a),
+    });
   }
   rounds.push({ warTags: tags });
   order.splice(1, 0, order.pop()!);
@@ -72,7 +91,8 @@ http
       bump += Number(/^\/bump\/(\d+)/.exec(url)![1]);
       return json(res, 200, { bump });
     }
-    if (req.headers.authorization !== "Bearer test") return json(res, 403, { reason: "accessDenied", message: "bad token" });
+    if (req.headers.authorization !== "Bearer test")
+      return json(res, 403, { reason: "accessDenied", message: "bad token" });
     let m: RegExpExecArray | null;
     if ((m = /^\/v1\/clans\/(#[^/]+)\/currentwar\/leaguegroup/.exec(url))) {
       if (!CLAN_TAGS.slice(0, 2).includes(m[1])) return json(res, 404, { reason: "notFound" });
@@ -85,7 +105,13 @@ http
     if ((m = /^\/v1\/clans\/(#[^/?]+)\/members/.exec(url))) {
       const c = clans.find((x) => x.tag === m![1]);
       if (!c) return json(res, 404, { reason: "notFound" });
-      return json(res, 200, { items: c.members.map((x, i) => ({ ...x, donations: 5000 - i * 250, donationsReceived: 1000 + i * 10 })) });
+      return json(res, 200, {
+        items: c.members.map((x, i) => ({
+          ...x,
+          donations: 5000 - i * 250,
+          donationsReceived: 1000 + i * 10,
+        })),
+      });
     }
     if ((m = /^\/v1\/clans\/(#[^/?]+)$/.exec(url))) {
       const c = clans.find((x) => x.tag === m![1]);
@@ -98,11 +124,26 @@ http
       if (!mem) {
         // someone outside the family, for testing tracked players
         if (!/^#GUEST/.test(m[1])) return json(res, 404, { reason: "notFound" });
-        return json(res, 200, { achievements: [{ name: "Conqueror", value: 1500 + bump, info: "Win 5000 Multiplayer battles" }], tag: m[1], name: "Outsider", townHallLevel: 16, trophies: 5200, attackWins: 41, defenseWins: 9, donations: 3300, donationsReceived: 1200, clan: { tag: "#OTHER", name: "Some Other Clan" } });
+        return json(res, 200, {
+          achievements: [{ name: "Conqueror", value: 1500 + bump, info: "Win 5000 Multiplayer battles" }],
+          tag: m[1],
+          name: "Outsider",
+          townHallLevel: 16,
+          trophies: 5200,
+          attackWins: 41,
+          defenseWins: 9,
+          donations: 3300,
+          donationsReceived: 1200,
+          clan: { tag: "#OTHER", name: "Some Other Clan" },
+        });
       }
       return json(res, 200, {
         achievements: [
-          { name: "Friend in Need", value: 100000, info: "Donate 25000 capacity worth of reinforcements to Clanmates" },
+          {
+            name: "Friend in Need",
+            value: 100000,
+            info: "Donate 25000 capacity worth of reinforcements to Clanmates",
+          },
           { name: "Conqueror", value: 29000 + i * 10 + bump, info: "Win 5000 Multiplayer battles" },
         ],
         tag: mem.tag,

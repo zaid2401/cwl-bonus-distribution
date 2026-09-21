@@ -55,11 +55,16 @@ export function seasonLabel(season: string): string {
 }
 
 // Sheet headers come in every shape: "MAY", "JULY", "6/1/2026", "2026-06-01".
-export function guessSeasonFromHeader(header: string, now = new Date()): { id: string; sortKey: string } | null {
+export function guessSeasonFromHeader(
+  header: string,
+  now = new Date(),
+): { id: string; sortKey: string } | null {
   const h = header.trim();
   const iso = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/.exec(h);
   const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(h);
-  let y: number | undefined, m: number | undefined, day = 1;
+  let y: number | undefined,
+    m: number | undefined,
+    day = 1;
   if (iso) [y, m, day] = [Number(iso[1]), Number(iso[2]), Number(iso[3] ?? 1)];
   else if (us) [y, m, day] = [Number(us[3]), Number(us[1]), Number(us[2])];
   else {
@@ -74,12 +79,16 @@ export function guessSeasonFromHeader(header: string, now = new Date()): { id: s
 }
 
 export function truthy(v: unknown): boolean {
-  const s = String(v ?? "").trim().toLowerCase();
+  const s = String(v ?? "")
+    .trim()
+    .toLowerCase();
   return ["true", "yes", "y", "1", "x", "✓", "✔", "✅"].includes(s);
 }
 
 export function toInt(v: unknown): number | null {
-  const s = String(v ?? "").replace(/[, ]/g, "").trim();
+  const s = String(v ?? "")
+    .replace(/[, ]/g, "")
+    .trim();
   if (!s) return null;
   const n = Number(s);
   return Number.isFinite(n) ? Math.trunc(n) : null;

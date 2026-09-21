@@ -4,7 +4,15 @@ import { useState } from "react";
 import { deletePlayer, savePlayer } from "@/lib/actions";
 import { Result, useAction } from "./ActionButton";
 
-type P = { tag: string; name: string; discordId: string | null; discordUsername: string | null; pn: number | null; isGuest: boolean; notes: string | null };
+type P = {
+  tag: string;
+  name: string;
+  discordId: string | null;
+  discordUsername: string | null;
+  pn: number | null;
+  isGuest: boolean;
+  notes: string | null;
+};
 
 export function PlayersTable({ rows }: { rows: P[] }) {
   return (
@@ -36,29 +44,67 @@ export function PlayersTable({ rows }: { rows: P[] }) {
 }
 
 function Row({ p }: { p: P }) {
-  const [v, setV] = useState({ discordId: p.discordId ?? "", discordUsername: p.discordUsername ?? "", pn: p.pn?.toString() ?? "", notes: p.notes ?? "" });
+  const [v, setV] = useState({
+    discordId: p.discordId ?? "",
+    discordUsername: p.discordUsername ?? "",
+    pn: p.pn?.toString() ?? "",
+    notes: p.notes ?? "",
+  });
   const { pending, result, exec } = useAction();
-  const dirty = v.discordId !== (p.discordId ?? "") || v.discordUsername !== (p.discordUsername ?? "") || v.pn !== (p.pn?.toString() ?? "") || v.notes !== (p.notes ?? "");
+  const dirty =
+    v.discordId !== (p.discordId ?? "") ||
+    v.discordUsername !== (p.discordUsername ?? "") ||
+    v.pn !== (p.pn?.toString() ?? "") ||
+    v.notes !== (p.notes ?? "");
   const save = () =>
-    exec(() => savePlayer({ tag: p.tag, discordId: v.discordId, discordUsername: v.discordUsername, pn: v.pn === "" ? null : Number(v.pn), notes: v.notes }));
+    exec(() =>
+      savePlayer({
+        tag: p.tag,
+        discordId: v.discordId,
+        discordUsername: v.discordUsername,
+        pn: v.pn === "" ? null : Number(v.pn),
+        notes: v.notes,
+      }),
+    );
   return (
     <tr className="hover:bg-panel2">
       <td className="td font-medium">{p.name || "—"}</td>
       <td className="td text-muted">{p.tag}</td>
       <td className="td">
-        <input className={`input w-48 py-1 ${!v.discordId ? "border-bad/50" : ""}`} value={v.discordId} onChange={(e) => setV({ ...v, discordId: e.target.value.trim() })} />
+        <input
+          className={`input w-48 py-1 ${!v.discordId ? "border-bad/50" : ""}`}
+          value={v.discordId}
+          onChange={(e) => setV({ ...v, discordId: e.target.value.trim() })}
+        />
       </td>
       <td className="td">
-        <input className="input w-40 py-1" value={v.discordUsername} onChange={(e) => setV({ ...v, discordUsername: e.target.value })} />
+        <input
+          className="input w-40 py-1"
+          value={v.discordUsername}
+          onChange={(e) => setV({ ...v, discordUsername: e.target.value })}
+        />
       </td>
       <td className="td">
-        <input className="input w-14 py-1 text-center" value={v.pn} onChange={(e) => setV({ ...v, pn: e.target.value.replace(/\D/g, "") })} />
+        <input
+          className="input w-14 py-1 text-center"
+          value={v.pn}
+          onChange={(e) => setV({ ...v, pn: e.target.value.replace(/\D/g, "") })}
+        />
       </td>
       <td className="td">
-        <input type="checkbox" checked={p.isGuest} disabled={pending} onChange={(e) => exec(() => savePlayer({ tag: p.tag, isGuest: e.target.checked }))} />
+        <input
+          type="checkbox"
+          checked={p.isGuest}
+          disabled={pending}
+          onChange={(e) => exec(() => savePlayer({ tag: p.tag, isGuest: e.target.checked }))}
+        />
       </td>
       <td className="td">
-        <input className="input w-40 py-1" value={v.notes} onChange={(e) => setV({ ...v, notes: e.target.value })} />
+        <input
+          className="input w-40 py-1"
+          value={v.notes}
+          onChange={(e) => setV({ ...v, notes: e.target.value })}
+        />
       </td>
       <td className="td whitespace-nowrap text-right">
         {dirty && (
@@ -66,7 +112,11 @@ function Row({ p }: { p: P }) {
             Save
           </button>
         )}
-        <button className="btn btn-danger btn-sm" disabled={pending} onClick={() => confirm(`Delete ${p.name || p.tag}?`) && exec(() => deletePlayer(p.tag))}>
+        <button
+          className="btn btn-danger btn-sm"
+          disabled={pending}
+          onClick={() => confirm(`Delete ${p.name || p.tag}?`) && exec(() => deletePlayer(p.tag))}
+        >
           ✕
         </button>
         {result && !result.ok && <Result result={result} />}
@@ -84,8 +134,22 @@ function NewPlayer() {
       <div className="mt-3 flex flex-wrap items-end gap-2">
         {(["tag", "name", "discordId", "discordUsername", "pn"] as const).map((k) => (
           <div key={k}>
-            <label className="label">{{ tag: "Tag", name: "Name", discordId: "Discord ID", discordUsername: "Discord username", pn: "PN" }[k]}</label>
-            <input className={`input ${k === "pn" ? "w-16" : ""}`} value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} />
+            <label className="label">
+              {
+                {
+                  tag: "Tag",
+                  name: "Name",
+                  discordId: "Discord ID",
+                  discordUsername: "Discord username",
+                  pn: "PN",
+                }[k]
+              }
+            </label>
+            <input
+              className={`input ${k === "pn" ? "w-16" : ""}`}
+              value={v[k]}
+              onChange={(e) => setV({ ...v, [k]: e.target.value })}
+            />
           </div>
         ))}
         <button
@@ -93,7 +157,14 @@ function NewPlayer() {
           disabled={pending || !v.tag}
           onClick={() =>
             exec(
-              () => savePlayer({ tag: v.tag, name: v.name, discordId: v.discordId, discordUsername: v.discordUsername, pn: v.pn ? Number(v.pn) : null }),
+              () =>
+                savePlayer({
+                  tag: v.tag,
+                  name: v.name,
+                  discordId: v.discordId,
+                  discordUsername: v.discordUsername,
+                  pn: v.pn ? Number(v.pn) : null,
+                }),
               (r) => r.ok && setV({ tag: "", name: "", discordId: "", discordUsername: "", pn: "" }),
             )
           }

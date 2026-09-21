@@ -28,8 +28,9 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
             {board.clanName} <span className="text-base font-normal text-muted">{board.clanTag}</span>
           </h1>
           <p className="text-muted">
-            Record <span className="text-good">{board.wins}W</span> / <span className="text-bad">{board.losses}L</span> / {board.ties}T (
-            {board.roundsEnded}/7 wars ended) · Bonuses = 6 + wins · Donations from {season.donationSeason ?? "—"} ·
+            Record <span className="text-good">{board.wins}W</span> /{" "}
+            <span className="text-bad">{board.losses}L</span> / {board.ties}T ({board.roundsEnded}/7 wars
+            ended) · Bonuses = 6 + wins · Donations from {season.donationSeason ?? "—"} ·
             {board.hasApiData ? " attacks from API" : " no API war data (using imported/manual attacks)"}
           </p>
         </div>
@@ -57,9 +58,10 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
       />
 
       <div className="text-xs text-muted">
-        <b>Eligible</b> = 7/7 attacks, main account (not PN2+), not a guest. <b>B2B</b> = bonus in {B2B_THRESHOLD}+ of the last {B2B_WINDOW}{" "}
-        seasons (flag only). <b>Star steal</b> = attacked a lower base after already having 8★. Numbers in gold = top donors among eligible
-        players up to the bonus count (a hint only — you decide).
+        <b>Eligible</b> = 7/7 attacks, main account (not PN2+), not a guest. <b>B2B</b> = bonus in{" "}
+        {B2B_THRESHOLD}+ of the last {B2B_WINDOW} seasons (flag only). <b>Star steal</b> = attacked a lower
+        base after already having 8★. Numbers in gold = top donors among eligible players up to the bonus
+        count (a hint only — you decide).
       </div>
     </div>
   );

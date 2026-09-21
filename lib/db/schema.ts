@@ -1,13 +1,4 @@
-import {
-  pgTable,
-  text,
-  integer,
-  boolean,
-  real,
-  timestamp,
-  primaryKey,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, real, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
 
 export const clans = pgTable("clans", {
   tag: text("tag").primaryKey(),

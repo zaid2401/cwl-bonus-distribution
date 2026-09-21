@@ -29,7 +29,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </Link>
               <nav className="flex flex-wrap gap-1">
                 {nav.map((n) => (
-                  <Link key={n.href} href={n.href} className="rounded px-2.5 py-1 text-muted hover:bg-panel2 hover:text-text">
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    className="rounded px-2.5 py-1 text-muted hover:bg-panel2 hover:text-text"
+                  >
                     {n.label}
                   </Link>
                 ))}

@@ -1,6 +1,15 @@
 import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
-import { coc, CocError, enc, pool, type ApiLeagueGroup, type ApiWar, type ApiMember, type ApiPlayer } from "./coc";
+import {
+  coc,
+  CocError,
+  enc,
+  pool,
+  type ApiLeagueGroup,
+  type ApiWar,
+  type ApiMember,
+  type ApiPlayer,
+} from "./coc";
 import { cwlSeasonId, gameSeasonAt, prevMonth, seasonLabel } from "./util";
 
 export interface SyncResult {
@@ -12,7 +21,13 @@ export interface SyncResult {
 async function ensureSeason(db: DB, id: string) {
   await db
     .insert(s.seasons)
-    .values({ id, label: seasonLabel(id), sortKey: `${id}-01`, donationSeason: prevMonth(id), hasCwlData: true })
+    .values({
+      id,
+      label: seasonLabel(id),
+      sortKey: `${id}-01`,
+      donationSeason: prevMonth(id),
+      hasCwlData: true,
+    })
     .onConflictDoUpdate({ target: s.seasons.id, set: { hasCwlData: true } });
   const [row] = await db.select().from(s.seasons).where(eq(s.seasons.id, id));
   return row;
@@ -20,7 +35,8 @@ async function ensureSeason(db: DB, id: string) {
 
 async function saveWar(db: DB, seasonId: string, round: number, warTag: string, war: ApiWar) {
   const posOf = new Map<string, number>();
-  for (const side of [war.clan, war.opponent]) for (const m of side.members ?? []) posOf.set(m.tag, m.mapPosition ?? 0);
+  for (const side of [war.clan, war.opponent])
+    for (const m of side.members ?? []) posOf.set(m.tag, m.mapPosition ?? 0);
 
   await db
     .insert(s.cwlWars)
@@ -95,13 +111,16 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
   try {
     group = await coc<ApiLeagueGroup>(`/clans/${enc(clanTag)}/currentwar/leaguegroup`);
   } catch (e) {
-    if (e instanceof CocError && e.status === 404) return { clanTag, ok: false, message: "Not in CWL right now (no league group)." };
+    if (e instanceof CocError && e.status === 404)
+      return { clanTag, ok: false, message: "Not in CWL right now (no league group)." };
     return { clanTag, ok: false, message: (e as Error).message };
   }
-  if (!group?.season) return { clanTag, ok: false, message: `League group state: ${group?.state ?? "unknown"}` };
+  if (!group?.season)
+    return { clanTag, ok: false, message: `League group state: ${group?.state ?? "unknown"}` };
 
   const season = await ensureSeason(db, cwlSeasonId(group.season));
-  if (season.status === "finalized") return { clanTag, ok: true, message: `Season ${season.label} is finalized — skipped.` };
+  if (season.status === "finalized")
+    return { clanTag, ok: true, message: `Season ${season.label} is finalized — skipped.` };
 
   const ours = group.clans.find((c) => c.tag === clanTag);
   await db
@@ -113,7 +132,9 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
     });
 
   if (ours) {
-    await db.delete(s.cwlRoster).where(and(eq(s.cwlRoster.seasonId, season.id), eq(s.cwlRoster.clanTag, clanTag)));
+    await db
+      .delete(s.cwlRoster)
+      .where(and(eq(s.cwlRoster.seasonId, season.id), eq(s.cwlRoster.clanTag, clanTag)));
     if (ours.members.length)
       await db.insert(s.cwlRoster).values(
         ours.members.map((m: ApiMember) => ({
@@ -136,7 +157,9 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
     const mine = known.find((w) => w.clanTag === clanTag || w.opponentTag === clanTag);
     if (mine?.state === "warEnded") continue;
 
-    const toFetch = mine ? [mine.warTag] : tags.filter((t) => !known.some((k) => k.warTag === t && k.state === "warEnded"));
+    const toFetch = mine
+      ? [mine.warTag]
+      : tags.filter((t) => !known.some((k) => k.warTag === t && k.state === "warEnded"));
     const wars = await pool(toFetch, 4, async (t) => {
       try {
         return { t, war: await coc<ApiWar>(`/clanwarleagues/wars/${enc(t)}`) };
@@ -212,7 +235,9 @@ export async function snapshotDonations(now = new Date()): Promise<SyncResult[]>
 // attackWins on the player object only counts ranked battles. The Conqueror
 // achievement counts all of them, so we diff that instead.
 function conquerorValue(p: ApiPlayer): number | null {
-  const a = p.achievements?.find((x) => x.name === "Conqueror") ?? p.achievements?.find((x) => /Multiplayer battles$/i.test(x.info ?? ""));
+  const a =
+    p.achievements?.find((x) => x.name === "Conqueror") ??
+    p.achievements?.find((x) => /Multiplayer battles$/i.test(x.info ?? ""));
   return a ? a.value : null;
 }
 
@@ -244,7 +269,13 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
   const tracked = await db.select().from(s.players).where(eq(s.players.isTracked, true));
   for (const t of tracked) tags.add(t.tag);
   if (!tags.size)
-    return { ok: false, season, players: 0, failed: 0, message: "No players found. Add family clans, or track players by tag." };
+    return {
+      ok: false,
+      season,
+      players: 0,
+      failed: 0,
+      message: "No players found. Add family clans, or track players by tag.",
+    };
 
   // What we already have for this season, and where Conqueror stood before it.
   const existing = await db.select().from(s.playerStats).where(eq(s.playerStats.season, season));
@@ -256,10 +287,12 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
     order by player_tag, season desc
   `);
   const carriedBy = new Map(
-    (((carried as { rows?: { player_tag: string; attacks_total: number }[] }).rows ?? []) as {
-      player_tag: string;
-      attacks_total: number;
-    }[]).map((r) => [r.player_tag, Number(r.attacks_total)]),
+    (
+      ((carried as { rows?: { player_tag: string; attacks_total: number }[] }).rows ?? []) as {
+        player_tag: string;
+        attacks_total: number;
+      }[]
+    ).map((r) => [r.player_tag, Number(r.attacks_total)]),
   );
 
   let failed = 0;
@@ -314,7 +347,10 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
           updatedAt: new Date(),
         },
       });
-    await upsertPlayerNames(db, chunk.map((r) => ({ tag: r.playerTag, name: r.name ?? "" })));
+    await upsertPlayerNames(
+      db,
+      chunk.map((r) => ({ tag: r.playerTag, name: r.name ?? "" })),
+    );
   }
 
   return {
@@ -333,5 +369,10 @@ export async function clansInvolvedIn(db: DB, seasonId: string, clanTag: string)
   return db
     .select()
     .from(s.cwlWars)
-    .where(and(eq(s.cwlWars.seasonId, seasonId), or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag))));
+    .where(
+      and(
+        eq(s.cwlWars.seasonId, seasonId),
+        or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag)),
+      ),
+    );
 }

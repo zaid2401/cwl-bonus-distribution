@@ -9,6 +9,7 @@ Private web app for picking CWL bonus recipients.
 - **Season stats page**: per game season (the season that resets with donations), three tabs — Donations + Received, Donations, and Attacks.
 
   Attacks count **every multiplayer win, ranked and unranked**. The player object's `attackWins` only counts ranked battles, so the app stores the lifetime "Conqueror" achievement and subtracts the value held when the season began. A season therefore counts from its first refresh; after a season rollover the figure is exact. Players outside the family clans can be followed by tag.
+
 - **Live attacks page** (season → Live attacks): round-by-round grid per clan showing stars, attacks still open in a running war, and missed attacks.
 - Everything can be edited by hand. Imports from Google Sheet links (ClashPerk exports, bonus history, player links) are there as a fallback.
 
@@ -38,23 +39,25 @@ COC_API_TOKEN=your-token
 ## 3. Free hosting (Supabase + Vercel)
 
 **Database: Supabase**
+
 1. Create a project at https://supabase.com (free).
 2. Go to **Connect** → **Transaction pooler** and copy the URI (port 6543). Replace `[YOUR-PASSWORD]` in it.
 3. This URI is your `DATABASE_URL`. Tables are created automatically on first run.
 
 **App: Vercel**
+
 1. Push this folder to a **private** GitHub repo.
 2. At https://vercel.com, click **Add New → Project** and import the repo.
 3. Add these environment variables:
 
-| Name | Value |
-|---|---|
-| `ADMIN_PASSWORD` | your login password |
-| `COC_API_TOKEN` | CoC API token |
-| `DATABASE_URL` | Supabase pooler URI |
-| `CRON_SECRET` | any long random string |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4 |
-| `GOOGLE_PRIVATE_KEY` | see step 4 |
+| Name                           | Value                  |
+| ------------------------------ | ---------------------- |
+| `ADMIN_PASSWORD`               | your login password    |
+| `COC_API_TOKEN`                | CoC API token          |
+| `DATABASE_URL`                 | Supabase pooler URI    |
+| `CRON_SECRET`                  | any long random string |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4             |
+| `GOOGLE_PRIVATE_KEY`           | see step 4             |
 
 4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run saves donations, reads every family-clan member and tracked player for season stats, and syncs CWL.
 

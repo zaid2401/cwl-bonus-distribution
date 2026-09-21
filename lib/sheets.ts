@@ -13,7 +13,9 @@ export async function loadRows(source: string): Promise<string[][]> {
   const res = await fetch(url, { redirect: "follow", cache: "no-store" });
   const type = res.headers.get("content-type") ?? "";
   if (!res.ok || type.includes("text/html"))
-    throw new Error("Could not read the sheet. Set sharing to “Anyone with the link can view” and open the correct tab before copying the link.");
+    throw new Error(
+      "Could not read the sheet. Set sharing to “Anyone with the link can view” and open the correct tab before copying the link.",
+    );
   return clean(parseCsv(await res.text()));
 }
 
@@ -26,7 +28,10 @@ function clean(rows: string[][]) {
 async function accessToken(): Promise<string> {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!email || !key) throw new Error("Google service account is not configured (GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY).");
+  if (!email || !key)
+    throw new Error(
+      "Google service account is not configured (GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY).",
+    );
   const now = Math.floor(Date.now() / 1000);
   const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
   const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({
@@ -40,7 +45,10 @@ async function accessToken(): Promise<string> {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${sig}` }),
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: `${unsigned}.${sig}`,
+    }),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(`Google auth failed: ${body.error_description ?? body.error}`);
@@ -67,14 +75,18 @@ export async function writeSheetTab(sheetUrl: string, data: SheetExport): Promis
     if (!res.ok) {
       const msg = body?.error?.message ?? res.statusText;
       if (res.status === 403 || res.status === 404)
-        throw new Error(`Google Sheets: ${msg}. Share the sheet with ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL} as Editor.`);
+        throw new Error(
+          `Google Sheets: ${msg}. Share the sheet with ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL} as Editor.`,
+        );
       throw new Error(`Google Sheets: ${msg}`);
     }
     return body;
   };
 
   const meta = await api("?fields=sheets.properties");
-  const existing = meta.sheets?.find((sh: { properties: { title: string } }) => sh.properties.title === data.title);
+  const existing = meta.sheets?.find(
+    (sh: { properties: { title: string } }) => sh.properties.title === data.title,
+  );
   const requests: object[] = [];
   if (existing) requests.push({ deleteSheet: { sheetId: existing.properties.sheetId } });
   const newId = Math.floor(Math.random() * 1e9);
@@ -84,7 +96,11 @@ export async function writeSheetTab(sheetUrl: string, data: SheetExport): Promis
         sheetId: newId,
         title: data.title,
         index: 0,
-        gridProperties: { rowCount: data.rows.length + 5, columnCount: Math.max(26, data.rows[0]?.length ?? 0), frozenRowCount: 1 },
+        gridProperties: {
+          rowCount: data.rows.length + 5,
+          columnCount: Math.max(26, data.rows[0]?.length ?? 0),
+          frozenRowCount: 1,
+        },
       },
     },
   });
@@ -107,7 +123,16 @@ export async function writeSheetTab(sheetUrl: string, data: SheetExport): Promis
     fmt(0, color(0.85, 0.85, 0.85), true),
     ...data.greenRows.map((r) => fmt(r, color(0.8, 1, 0.8))),
     ...data.goldRows.map((r) => fmt(r, color(1, 0.9, 0.6), true)),
-    { autoResizeDimensions: { dimensions: { sheetId: newId, dimension: "COLUMNS", startIndex: 0, endIndex: data.rows[0]?.length ?? 1 } } },
+    {
+      autoResizeDimensions: {
+        dimensions: {
+          sheetId: newId,
+          dimension: "COLUMNS",
+          startIndex: 0,
+          endIndex: data.rows[0]?.length ?? 1,
+        },
+      },
+    },
   ];
   await api(":batchUpdate", { method: "POST", body: JSON.stringify({ requests: fmtReqs }) });
   return `https://docs.google.com/spreadsheets/d/${id}/edit#gid=${newId}`;

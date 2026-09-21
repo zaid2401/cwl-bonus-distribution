@@ -4,7 +4,14 @@ import { getDb, schema as s } from "@/lib/db";
 import { getSeason, seasonOverview } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
 import { SeasonSettings } from "@/components/SeasonSettings";
-import { applyRecordedBonuses, deleteSeason, exportSeasonToSheet, finalizeSeason, reopenSeason, syncClan } from "@/lib/actions";
+import {
+  applyRecordedBonuses,
+  deleteSeason,
+  exportSeasonToSheet,
+  finalizeSeason,
+  reopenSeason,
+  syncClan,
+} from "@/lib/actions";
 import { tagSlug } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -38,11 +45,15 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           </Link>
           <h1 className="mt-1 text-2xl font-bold">
             CWL {season.label}{" "}
-            {finalized ? <span className="chip bg-good/15 align-middle text-good">Finalized</span> : <span className="chip bg-accent/15 align-middle text-accent">Open</span>}
+            {finalized ? (
+              <span className="chip bg-good/15 align-middle text-good">Finalized</span>
+            ) : (
+              <span className="chip bg-accent/15 align-middle text-accent">Open</span>
+            )}
           </h1>
           <p className="text-muted">
-            Donations from season <b className="text-text">{season.donationSeason ?? "—"}</b> · {totals.selected}/{totals.bonuses} bonuses picked ·{" "}
-            {totals.eligible} eligible players
+            Donations from season <b className="text-text">{season.donationSeason ?? "—"}</b> ·{" "}
+            {totals.selected}/{totals.bonuses} bonuses picked · {totals.eligible} eligible players
             {totals.recorded > 0 && <> · {totals.recorded} already in bonus history</>}
           </p>
         </div>
@@ -101,18 +112,24 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
               return (
                 <tr key={c.clanTag} className="hover:bg-panel2">
                   <td className="td">
-                    <Link href={`/seasons/${encodeURIComponent(id)}/${tagSlug(c.clanTag)}`} className="font-semibold text-accent hover:underline">
+                    <Link
+                      href={`/seasons/${encodeURIComponent(id)}/${tagSlug(c.clanTag)}`}
+                      className="font-semibold text-accent hover:underline"
+                    >
                       {c.clanName}
                     </Link>
                     <div className="text-xs text-muted">{c.clanTag}</div>
                   </td>
                   <td className="td whitespace-nowrap">
-                    <span className="text-good">{c.wins}</span> / <span className="text-bad">{c.losses}</span> / {c.ties}
+                    <span className="text-good">{c.wins}</span> / <span className="text-bad">{c.losses}</span>{" "}
+                    / {c.ties}
                     <span className="text-muted"> ({c.roundsEnded}/7)</span>
                   </td>
                   <td className="td font-semibold">
                     {c.bonuses}
-                    {c.bonusOverride != null && <span className="chip ml-1 bg-panel2 text-muted">manual</span>}
+                    {c.bonusOverride != null && (
+                      <span className="chip ml-1 bg-panel2 text-muted">manual</span>
+                    )}
                   </td>
                   <td className="td">
                     <span className={done ? "text-good" : c.selected > c.bonuses ? "text-bad" : "text-warn"}>
@@ -123,11 +140,19 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
                   <td className="td">{c.recorded || <span className="text-muted">—</span>}</td>
                   <td className="td text-xs text-muted">
                     {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString() : "never"}
-                    {c.syncMessage && <div className="max-w-64 truncate" title={c.syncMessage}>{c.syncMessage}</div>}
+                    {c.syncMessage && (
+                      <div className="max-w-64 truncate" title={c.syncMessage}>
+                        {c.syncMessage}
+                      </div>
+                    )}
                   </td>
                   <td className="td">
                     {!finalized && (
-                      <ActionButton action={syncClan.bind(null, c.clanTag)} className="btn btn-sm" pendingText="…">
+                      <ActionButton
+                        action={syncClan.bind(null, c.clanTag)}
+                        className="btn btn-sm"
+                        pendingText="…"
+                      >
                         Sync
                       </ActionButton>
                     )}
@@ -147,8 +172,15 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
       </div>
 
       <SeasonSettings
-        season={{ id: season.id, label: season.label, sortKey: season.sortKey, donationSeason: season.donationSeason }}
-        clans={allClans.filter((c) => !clans.some((x) => x.clanTag === c.tag)).map((c) => ({ tag: c.tag, name: c.name }))}
+        season={{
+          id: season.id,
+          label: season.label,
+          sortKey: season.sortKey,
+          donationSeason: season.donationSeason,
+        }}
+        clans={allClans
+          .filter((c) => !clans.some((x) => x.clanTag === c.tag))
+          .map((c) => ({ tag: c.tag, name: c.name }))}
       />
 
       <div className="flex justify-end">

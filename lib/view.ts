@@ -56,7 +56,12 @@ async function clanRecord(db: DB, seasonId: string, clanTag: string) {
   const wars = await db
     .select()
     .from(s.cwlWars)
-    .where(and(eq(s.cwlWars.seasonId, seasonId), or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag))));
+    .where(
+      and(
+        eq(s.cwlWars.seasonId, seasonId),
+        or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag)),
+      ),
+    );
   let wins = 0,
     losses = 0,
     ties = 0;
@@ -153,6 +158,28 @@ export interface Board {
   syncMessage: string | null;
 }
 
+function countAttacks(override: number | null, fromApi: number | null, imported: number | null) {
+  if (override != null) return { attacks: override, source: "override" as const };
+  if (fromApi != null) return { attacks: fromApi, source: "api" as const };
+  if (imported != null) return { attacks: imported, source: "import" as const };
+  return { attacks: 0, source: "none" as const };
+}
+
+function otherAccountsOf(siblings: (typeof s.players.$inferSelect)[], discordId: string | null, tag: string) {
+  if (!discordId) return [];
+  const mine = siblings.filter((x) => x.discordId === discordId && x.tag !== tag);
+  return mine.map((x) => ({ tag: x.tag, name: x.name }));
+}
+
+// Eligible players first, ordered by donations. Everyone else falls in behind them by attacks.
+function compareBoardRows(a: BoardRow, b: BoardRow) {
+  if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+  if (!a.eligible && a.attacks !== b.attacks) return b.attacks - a.attacks;
+  if (a.donated !== b.donated) return b.donated - a.donated;
+  if (a.received !== b.received) return b.received - a.received;
+  return a.name.localeCompare(b.name);
+}
+
 export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): Promise<Board> {
   const db = dbIn ?? (await getDb());
   const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
@@ -188,8 +215,10 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
 
   const names = new Map<string, { name: string; th: number | null }>();
   for (const r of roster) names.set(r.playerTag, { name: r.name, th: r.townhall });
-  for (const m of warMembers) names.set(m.playerTag, { name: m.name, th: m.townhall ?? names.get(m.playerTag)?.th ?? null });
-  for (const p of parts) if (!names.has(p.playerTag)) names.set(p.playerTag, { name: p.name ?? "", th: null });
+  for (const m of warMembers)
+    names.set(m.playerTag, { name: m.name, th: m.townhall ?? names.get(m.playerTag)?.th ?? null });
+  for (const p of parts)
+    if (!names.has(p.playerTag)) names.set(p.playerTag, { name: p.name ?? "", th: null });
   const tags = [...names.keys()];
 
   const playerRows = tags.length ? await db.select().from(s.players).where(inArray(s.players.tag, tags)) : [];
@@ -212,9 +241,14 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
   const donBy = new Map<string, { donated: number; received: number; imported: boolean }>();
   for (const d of dons) {
     const cur = donBy.get(d.playerTag);
-    if (d.clanTag === "IMPORT") donBy.set(d.playerTag, { donated: d.donated, received: d.received, imported: true });
+    if (d.clanTag === "IMPORT")
+      donBy.set(d.playerTag, { donated: d.donated, received: d.received, imported: true });
     else if (!cur?.imported)
-      donBy.set(d.playerTag, { donated: (cur?.donated ?? 0) + d.donated, received: (cur?.received ?? 0) + d.received, imported: false });
+      donBy.set(d.playerTag, {
+        donated: (cur?.donated ?? 0) + d.donated,
+        received: (cur?.received ?? 0) + d.received,
+        imported: false,
+      });
   }
   // Player stats catch anyone who switched clans mid-season. An import still wins.
   const stats = tags.length
@@ -240,7 +274,9 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     : [];
   // Already in history for this season: imported, or from an earlier finalize.
   const recordedKeys = new Set(
-    (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map((h) => h.memberKey),
+    (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map(
+      (h) => h.memberKey,
+    ),
   );
   const histBy = new Map<string, Set<string>>();
   for (const h of hist) {
@@ -253,7 +289,13 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     .select({ p: s.participants, pl: s.players })
     .from(s.participants)
     .leftJoin(s.players, eq(s.players.tag, s.participants.playerTag))
-    .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.selected, true), isNotNull(s.participants.clanTag)));
+    .where(
+      and(
+        eq(s.participants.seasonId, seasonId),
+        eq(s.participants.selected, true),
+        isNotNull(s.participants.clanTag),
+      ),
+    );
   const selectedByMember = new Map<string, string>();
   for (const { p, pl } of otherSelected) {
     if (p.clanTag === clanTag) continue;
@@ -263,36 +305,36 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
   const partBy = new Map(parts.map((p) => [p.playerTag, p]));
   const hasApiData = rec.wars.length > 0;
 
-  const rows: BoardRow[] = tags.map((tag) => {
+  const rows: BoardRow[] = [];
+  for (const tag of tags) {
     const pl = playerBy.get(tag);
     const part = partBy.get(tag);
     const mine = attacks.filter((a) => a.attackerTag === tag);
     const apiAttacks = hasApiData ? mine.length : null;
-    let attacksCount = 0;
-    let attacksSource: BoardRow["attacksSource"] = "none";
-    if (part?.attacksOverride != null) [attacksCount, attacksSource] = [part.attacksOverride, "override"];
-    else if (apiAttacks != null) [attacksCount, attacksSource] = [apiAttacks, "api"];
-    else if (part?.importedAttacks != null) [attacksCount, attacksSource] = [part.importedAttacks, "import"];
+    const counted = countAttacks(part?.attacksOverride ?? null, apiAttacks, part?.importedAttacks ?? null);
 
     const don = donBy.get(tag);
-    const donated = part?.donationsOverride ?? don?.donated ?? 0;
     const key = memberKey(pl?.discordId, tag);
     const history = prevIds.map((id) => histBy.get(id)?.has(key) ?? false);
     const recent = history.filter(Boolean).length;
     const pn = pl?.pn ?? null;
     const isGuest = pl?.isGuest ?? false;
-    return {
+
+    let stars = 0;
+    for (const a of mine) stars += a.stars;
+
+    rows.push({
       tag,
       name: names.get(tag)?.name || pl?.name || tag,
       townhall: names.get(tag)?.th ?? null,
-      attacks: attacksCount,
-      attacksSource,
+      attacks: counted.attacks,
+      attacksSource: counted.source,
       apiAttacks,
       importedAttacks: part?.importedAttacks ?? null,
       attacksOverride: part?.attacksOverride ?? null,
-      stars: mine.reduce((n, a) => n + a.stars, 0),
+      stars,
       starSteal: starStealFlags(mine),
-      donated,
+      donated: part?.donationsOverride ?? don?.donated ?? 0,
       received: don?.received ?? 0,
       donationsOverride: part?.donationsOverride ?? null,
       discordId: pl?.discordId ?? null,
@@ -304,27 +346,17 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       history,
       recentBonuses: recent,
       backToBack: recent >= B2B_THRESHOLD,
-      eligible: isEligible({ attacks: attacksCount, pn, isGuest }),
+      eligible: isEligible({ attacks: counted.attacks, pn, isGuest }),
       selected: part?.selected ?? false,
       recorded: recordedKeys.has(key),
       transferToTag: part?.transferToTag ?? null,
       remark: part?.remark ?? null,
-      otherAccounts: pl?.discordId
-        ? siblings.filter((x) => x.discordId === pl.discordId && x.tag !== tag).map((x) => ({ tag: x.tag, name: x.name }))
-        : [],
+      otherAccounts: otherAccountsOf(siblings, pl?.discordId ?? null, tag),
       selectedElsewhere: selectedByMember.get(key) ?? null,
-    };
-  });
+    });
+  }
 
-  // Eligible first by donations, then the rest by attacks.
-  rows.sort(
-    (a, b) =>
-      Number(b.eligible) - Number(a.eligible) ||
-      (a.eligible ? 0 : b.attacks - a.attacks) ||
-      b.donated - a.donated ||
-      b.received - a.received ||
-      a.name.localeCompare(b.name),
-  );
+  rows.sort(compareBoardRows);
 
   return {
     season,

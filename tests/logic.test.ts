@@ -62,7 +62,10 @@ test("season helpers", () => {
   assert.equal(gameSeasonAt(new Date("2026-08-31T05:00:00Z")), "2026-09");
   assert.equal(gameSeasonAt(new Date("2026-12-28T06:00:00Z")), "2027-01");
   assert.equal(prevMonth("2026-01"), "2025-12");
-  assert.deepEqual(guessSeasonFromHeader("JULY", new Date("2026-09-14")), { id: "2026-07", sortKey: "2026-07-01" });
+  assert.deepEqual(guessSeasonFromHeader("JULY", new Date("2026-09-14")), {
+    id: "2026-07",
+    sortKey: "2026-07-01",
+  });
   assert.deepEqual(guessSeasonFromHeader("6/2/2026"), { id: "2026-06", sortKey: "2026-06-02" });
   assert.equal(normTag(" #2pp o "), "#2PP0");
 });

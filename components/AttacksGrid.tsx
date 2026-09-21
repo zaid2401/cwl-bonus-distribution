@@ -24,7 +24,10 @@ function Cell({ cell }: { cell: AttackCell }) {
     );
   if (cell.state === "pending")
     return (
-      <span className="chip bg-warn/15 text-warn" title={`In the lineup at #${cell.position}, attack still open`}>
+      <span
+        className="chip bg-warn/15 text-warn"
+        title={`In the lineup at #${cell.position}, attack still open`}
+      >
         open
       </span>
     );
@@ -47,10 +50,17 @@ export function AttacksGrid({ board, seasonId }: { board: AttackBoard; seasonId:
         </h2>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-muted">
-            <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={onlyProblems}
+              onChange={(e) => setOnlyProblems(e.target.checked)}
+            />
             Only open or missed
           </label>
-          <Link href={`/seasons/${encodeURIComponent(seasonId)}/${tagSlug(board.clanTag)}`} className="btn btn-sm">
+          <Link
+            href={`/seasons/${encodeURIComponent(seasonId)}/${tagSlug(board.clanTag)}`}
+            className="btn btn-sm"
+          >
             Bonus board →
           </Link>
         </div>
@@ -63,11 +73,19 @@ export function AttacksGrid({ board, seasonId }: { board: AttackBoard; seasonId:
               <th className="th w-10">#</th>
               <th className="th">Player</th>
               {board.rounds.map((r) => (
-                <th key={r.round} className="th text-center" title={`${r.opponentName} · ${r.ourStars}★ vs ${r.theirStars}★`}>
+                <th
+                  key={r.round}
+                  className="th text-center"
+                  title={`${r.opponentName} · ${r.ourStars}★ vs ${r.theirStars}★`}
+                >
                   R{r.round}
                   <div className="font-normal">
                     {r.state === "warEnded" ? (
-                      <span className={r.result === "win" ? "text-good" : r.result === "loss" ? "text-bad" : "text-muted"}>
+                      <span
+                        className={
+                          r.result === "win" ? "text-good" : r.result === "loss" ? "text-bad" : "text-muted"
+                        }
+                      >
                         {r.ourStars}–{r.theirStars}
                       </span>
                     ) : (
@@ -96,7 +114,9 @@ export function AttacksGrid({ board, seasonId }: { board: AttackBoard; seasonId:
                     <Cell cell={c} />
                   </td>
                 ))}
-                <td className={`td text-right font-medium ${r.attacks >= 7 ? "text-good" : ""}`}>{r.attacks}</td>
+                <td className={`td text-right font-medium ${r.attacks >= 7 ? "text-good" : ""}`}>
+                  {r.attacks}
+                </td>
                 <td className="td text-right text-muted">{r.stars}</td>
               </tr>
             ))}
@@ -111,9 +131,10 @@ export function AttacksGrid({ board, seasonId }: { board: AttackBoard; seasonId:
         </table>
       </div>
       <p className="text-xs text-muted">
-        <span className="text-good">★</span> attack made · <span className="text-warn">open</span> = in the lineup, war still running ·{" "}
-        <span className="text-bad">miss</span> = war ended without attacking · <span className="text-muted">prep</span> = war not started ·{" "}
-        <span className="text-line">·</span> not in that war
+        <span className="text-good">★</span> attack made · <span className="text-warn">open</span> = in the
+        lineup, war still running · <span className="text-bad">miss</span> = war ended without attacking ·{" "}
+        <span className="text-muted">prep</span> = war not started · <span className="text-line">·</span> not
+        in that war
       </p>
     </div>
   );

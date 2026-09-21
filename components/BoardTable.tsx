@@ -5,7 +5,22 @@ import type { BoardRow } from "@/lib/view";
 import { addPlayerToBoard, savePlayer, setBonusOverride, updateParticipant } from "@/lib/actions";
 import { Result, useAction } from "./ActionButton";
 
-const n = (v: number) => v.toLocaleString();
+function num(value: number) {
+  return value.toLocaleString();
+}
+
+function rowClass(row: BoardRow) {
+  if (row.selected) return "bg-accent/10";
+  if (row.eligible) return "";
+  return "opacity-60 hover:opacity-100";
+}
+
+function pickedClass(picked: number, bonuses: number) {
+  if (picked === bonuses) return "text-good";
+  return picked > bonuses ? "text-bad" : "text-warn";
+}
+
+type Filter = "all" | "eligible" | "selected" | "recorded";
 
 export function BoardTable(props: {
   seasonId: string;
@@ -19,7 +34,7 @@ export function BoardTable(props: {
 }) {
   const { seasonId, clanTag, finalized, rows } = props;
   const { pending, result, exec } = useAction();
-  const [filter, setFilter] = useState<"all" | "eligible" | "selected" | "recorded">("all");
+  const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
@@ -31,40 +46,63 @@ export function BoardTable(props: {
     return m;
   }, [rows, props.bonuses]);
 
-  const matchesFilter = (r: BoardRow) =>
-    filter === "all" || (filter === "eligible" ? r.eligible : filter === "recorded" ? r.recorded : r.selected);
-  const visible = rows.filter(
-    (r) =>
-      matchesFilter(r) &&
-      (!q || r.name.toLowerCase().includes(q.toLowerCase()) || r.tag.includes(q.toUpperCase()) || (r.discordUsername ?? "").toLowerCase().includes(q.toLowerCase())),
-  );
+  function matchesFilter(r: BoardRow) {
+    if (filter === "eligible") return r.eligible;
+    if (filter === "recorded") return r.recorded;
+    if (filter === "selected") return r.selected;
+    return true;
+  }
+
+  function matchesSearch(r: BoardRow) {
+    if (!q) return true;
+    const term = q.toLowerCase();
+    return (
+      r.name.toLowerCase().includes(term) ||
+      r.tag.includes(q.toUpperCase()) ||
+      (r.discordUsername ?? "").toLowerCase().includes(term)
+    );
+  }
+
+  const visible = rows.filter((r) => matchesFilter(r) && matchesSearch(r));
+
+  const filters: { id: Filter; label: string; count: number }[] = [
+    { id: "all", label: "All", count: rows.length },
+    { id: "eligible", label: "Eligible", count: rows.filter((r) => r.eligible).length },
+    { id: "selected", label: "Picked", count: picked },
+  ];
+  if (recorded) filters.push({ id: "recorded", label: "In history", count: recorded });
   const history = [...props.prevSeasons].reverse(); // oldest → newest
 
-  const part = (tag: string, patch: Parameters<typeof updateParticipant>[3]) => exec(() => updateParticipant(seasonId, clanTag, tag, patch));
+  const part = (tag: string, patch: Parameters<typeof updateParticipant>[3]) =>
+    exec(() => updateParticipant(seasonId, clanTag, tag, patch));
 
   return (
     <div className="space-y-3">
       <div className="card flex flex-wrap items-center gap-4 p-3">
         <div className="text-lg">
           Picked{" "}
-          <b className={picked === props.bonuses ? "text-good" : picked > props.bonuses ? "text-bad" : "text-warn"}>
+          <b className={pickedClass(picked, props.bonuses)}>
             {picked} / {props.bonuses}
           </b>
         </div>
         <BonusCount {...props} />
         <div className="flex gap-1">
-          {(["all", "eligible", "selected", "recorded"] as const).map((f) => {
-            const count = f === "all" ? rows.length : f === "eligible" ? rows.filter((r) => r.eligible).length : f === "selected" ? picked : recorded;
-            if (f === "recorded" && !recorded) return null;
-            const label = { all: "All", eligible: "Eligible", selected: "Picked", recorded: "In history" }[f];
-            return (
-              <button key={f} className={`btn btn-sm ${filter === f ? "border-accent text-accent" : ""}`} onClick={() => setFilter(f)}>
-                {label} ({count})
-              </button>
-            );
-          })}
+          {filters.map(({ id, label, count }) => (
+            <button
+              key={id}
+              className={`btn btn-sm ${filter === id ? "border-accent text-accent" : ""}`}
+              onClick={() => setFilter(id)}
+            >
+              {label} ({count})
+            </button>
+          ))}
         </div>
-        <input className="input w-48" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input
+          className="input w-48"
+          placeholder="Search…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
         <div className="ml-auto flex items-center gap-3">
           {pending && <span className="text-xs text-muted">Saving…</span>}
           <Result result={result && !result.ok ? result : null} />
@@ -95,9 +133,13 @@ export function BoardTable(props: {
           <tbody>
             {visible.map((r, i) => (
               <Fragment key={r.tag}>
-                <tr className={r.selected ? "bg-accent/10" : r.eligible ? "" : "opacity-60 hover:opacity-100"}>
+                <tr className={rowClass(r)}>
                   <td className="td text-xs">
-                    {hintRank.has(r.tag) ? <span className="font-bold text-accent">{hintRank.get(r.tag)}</span> : <span className="text-muted">{i + 1}</span>}
+                    {hintRank.has(r.tag) ? (
+                      <span className="font-bold text-accent">{hintRank.get(r.tag)}</span>
+                    ) : (
+                      <span className="text-muted">{i + 1}</span>
+                    )}
                   </td>
                   <td className="td">
                     <input
@@ -129,11 +171,19 @@ export function BoardTable(props: {
                     />
                   </td>
                   <td className="td text-right">
-                    <NumCell value={r.donated} overridden={r.donationsOverride != null} format onSave={(v) => part(r.tag, { donationsOverride: v })} />
+                    <NumCell
+                      value={r.donated}
+                      overridden={r.donationsOverride != null}
+                      format
+                      onSave={(v) => part(r.tag, { donationsOverride: v })}
+                    />
                   </td>
-                  <td className="td text-right text-muted">{n(r.received)}</td>
+                  <td className="td text-right text-muted">{num(r.received)}</td>
                   <td className="td">
-                    <button className="text-left hover:text-accent" onClick={() => setEditing(editing === r.tag ? null : r.tag)}>
+                    <button
+                      className="text-left hover:text-accent"
+                      onClick={() => setEditing(editing === r.tag ? null : r.tag)}
+                    >
                       {r.discordUsername || r.discordId ? (
                         <>
                           <div>{r.discordUsername ?? "—"}</div>
@@ -148,7 +198,12 @@ export function BoardTable(props: {
                     <PnCell value={r.pn} onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))} />
                   </td>
                   <td className="td">
-                    <input type="checkbox" className="size-4" checked={r.isGuest} onChange={(e) => exec(() => savePlayer({ tag: r.tag, isGuest: e.target.checked }))} />
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={r.isGuest}
+                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isGuest: e.target.checked }))}
+                    />
                   </td>
                   <td className="td">
                     <div className="flex gap-0.5">
@@ -168,15 +223,30 @@ export function BoardTable(props: {
                   <td className="td">
                     <div className="flex flex-wrap gap-1">
                       {r.recorded && (
-                        <span className="chip bg-good/15 text-good" title="Already recorded in bonus history for this season">
+                        <span
+                          className="chip bg-good/15 text-good"
+                          title="Already recorded in bonus history for this season"
+                        >
                           in history
                         </span>
                       )}
-                      {r.backToBack && <span className="chip bg-warn/15 text-warn" title={`${r.recentBonuses} bonuses in last ${history.length} seasons`}>B2B {r.recentBonuses}</span>}
+                      {r.backToBack && (
+                        <span
+                          className="chip bg-warn/15 text-warn"
+                          title={`${r.recentBonuses} bonuses in last ${history.length} seasons`}
+                        >
+                          B2B {r.recentBonuses}
+                        </span>
+                      )}
                       {r.starSteal.length > 0 && (
                         <span
                           className="chip bg-bad/15 text-bad"
-                          title={r.starSteal.map((f) => `Round ${f.round}: #${f.attackerPosition} hit #${f.defenderPosition} (${f.stars}★, had ${f.starsBefore}★)`).join("\n")}
+                          title={r.starSteal
+                            .map(
+                              (f) =>
+                                `Round ${f.round}: #${f.attackerPosition} hit #${f.defenderPosition} (${f.stars}★, had ${f.starsBefore}★)`,
+                            )
+                            .join("\n")}
                         >
                           Star steal ×{r.starSteal.length}
                         </span>
@@ -184,7 +254,14 @@ export function BoardTable(props: {
                       {r.isAlt && <span className="chip bg-panel2 text-muted">alt</span>}
                       {r.isGuest && <span className="chip bg-panel2 text-muted">guest</span>}
                       {r.attacks < 7 && <span className="chip bg-panel2 text-muted">{r.attacks}/7</span>}
-                      {r.selectedElsewhere && <span className="chip bg-bad/15 text-bad" title={`Also picked in ${r.selectedElsewhere}`}>picked elsewhere</span>}
+                      {r.selectedElsewhere && (
+                        <span
+                          className="chip bg-bad/15 text-bad"
+                          title={`Also picked in ${r.selectedElsewhere}`}
+                        >
+                          picked elsewhere
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="td">
@@ -228,7 +305,17 @@ export function BoardTable(props: {
   );
 }
 
-function BonusCount({ seasonId, clanTag, bonusOverride, autoBonuses }: { seasonId: string; clanTag: string; bonusOverride: number | null; autoBonuses: number }) {
+function BonusCount({
+  seasonId,
+  clanTag,
+  bonusOverride,
+  autoBonuses,
+}: {
+  seasonId: string;
+  clanTag: string;
+  bonusOverride: number | null;
+  autoBonuses: number;
+}) {
   const { exec } = useAction();
   const [val, setVal] = useState(bonusOverride?.toString() ?? "");
   return (
@@ -291,7 +378,7 @@ function NumCell({
         setEdit(true);
       }}
     >
-      {format ? n(value) : value}
+      {format ? num(value) : value}
       {overridden && <sup className="text-accent">✎</sup>}
     </button>
   );
@@ -335,7 +422,12 @@ function LinkEditor({ row, onClose }: { row: BoardRow; onClose: () => void }) {
       </div>
       <div>
         <label className="label">Discord ID</label>
-        <input className="input w-52" value={discordId} onChange={(e) => setId(e.target.value.trim())} placeholder="437304427456495618" />
+        <input
+          className="input w-52"
+          value={discordId}
+          onChange={(e) => setId(e.target.value.trim())}
+          placeholder="437304427456495618"
+        />
       </div>
       <div>
         <label className="label">Discord username</label>
@@ -344,7 +436,12 @@ function LinkEditor({ row, onClose }: { row: BoardRow; onClose: () => void }) {
       <button
         className="btn btn-primary"
         disabled={pending}
-        onClick={() => exec(() => savePlayer({ tag: row.tag, discordId, discordUsername: username }), (r) => r.ok && onClose())}
+        onClick={() =>
+          exec(
+            () => savePlayer({ tag: row.tag, discordId, discordUsername: username }),
+            (r) => r.ok && onClose(),
+          )
+        }
       >
         Save
       </button>
@@ -366,7 +463,12 @@ function AddPlayer({ seasonId, clanTag }: { seasonId: string; clanTag: string })
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <div>
           <label className="label">Player tag</label>
-          <input className="input" value={tag} onChange={(e) => setTag(e.target.value)} placeholder="#ABC123" />
+          <input
+            className="input"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            placeholder="#ABC123"
+          />
         </div>
         <div>
           <label className="label">Name</label>
@@ -375,7 +477,12 @@ function AddPlayer({ seasonId, clanTag }: { seasonId: string; clanTag: string })
         <button
           className="btn btn-primary"
           disabled={pending || !tag}
-          onClick={() => exec(() => addPlayerToBoard(seasonId, clanTag, tag, name), (r) => r.ok && (setTag(""), setName("")))}
+          onClick={() =>
+            exec(
+              () => addPlayerToBoard(seasonId, clanTag, tag, name),
+              (r) => r.ok && (setTag(""), setName("")),
+            )
+          }
         >
           Add
         </button>

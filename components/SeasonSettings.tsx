@@ -27,16 +27,28 @@ export function SeasonSettings({
         </div>
         <div>
           <label className="label">Order date (history order)</label>
-          <input className="input" value={sortKey} onChange={(e) => setSortKey(e.target.value)} placeholder="2026-09-01" />
+          <input
+            className="input"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+            placeholder="2026-09-01"
+          />
         </div>
         <div>
           <label className="label">Donation season</label>
-          <input className="input" value={donationSeason} onChange={(e) => setDonationSeason(e.target.value)} placeholder="2026-08" />
+          <input
+            className="input"
+            value={donationSeason}
+            onChange={(e) => setDonationSeason(e.target.value)}
+            placeholder="2026-08"
+          />
         </div>
         <button
           className="btn btn-primary"
           disabled={pending}
-          onClick={() => exec(() => updateSeason(season.id, { label, sortKey, donationSeason: donationSeason || null }))}
+          onClick={() =>
+            exec(() => updateSeason(season.id, { label, sortKey, donationSeason: donationSeason || null }))
+          }
         >
           Save
         </button>
@@ -54,7 +66,11 @@ export function SeasonSettings({
               ))}
             </select>
           </div>
-          <button className="btn" disabled={pending || !clan} onClick={() => exec(() => addClanToSeason(season.id, clan))}>
+          <button
+            className="btn"
+            disabled={pending || !clan}
+            onClick={() => exec(() => addClanToSeason(season.id, clan))}
+          >
             Add clan
           </button>
         </div>

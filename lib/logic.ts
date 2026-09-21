@@ -74,7 +74,11 @@ export function memberKey(discordId: string | null | undefined, tag: string): st
   return discordId?.trim() ? discordId.trim() : `tag:${tag}`;
 }
 
-export function recentBonusCount(member: string, prevSeasonIds: string[], history: Map<string, Set<string>>): number {
+export function recentBonusCount(
+  member: string,
+  prevSeasonIds: string[],
+  history: Map<string, Set<string>>,
+): number {
   return prevSeasonIds.filter((s) => history.get(s)?.has(member)).length;
 }
 

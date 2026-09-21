@@ -44,7 +44,11 @@ export async function statsSeasons(): Promise<string[]> {
 // player stats existed.
 export async function statsBoard(season: string): Promise<StatsBoard> {
   const db = await getDb();
-  const stats = await db.select().from(s.playerStats).where(eq(s.playerStats.season, season)).orderBy(desc(s.playerStats.donated));
+  const stats = await db
+    .select()
+    .from(s.playerStats)
+    .where(eq(s.playerStats.season, season))
+    .orderBy(desc(s.playerStats.donated));
   const legacy = await donationTotals(db, season);
 
   const tags = [...new Set([...stats.map((r) => r.playerTag), ...legacy.keys()])];
@@ -55,14 +59,23 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
   const statBy = new Map(stats.map((r) => [r.playerTag, r]));
 
   let lastUpdated: Date | null = null;
-  const rows: StatRow[] = tags.map((tag) => {
+  const rows: StatRow[] = [];
+
+  for (const tag of tags) {
     const st = statBy.get(tag);
     const old = legacy.get(tag);
     const p = playerBy.get(tag);
     if (st?.updatedAt && (!lastUpdated || st.updatedAt > lastUpdated)) lastUpdated = st.updatedAt;
+
     const donated = Math.max(st?.donated ?? 0, old?.donated ?? 0);
     const received = Math.max(st?.received ?? 0, old?.received ?? 0);
-    return {
+
+    let attacks = 0;
+    if (st?.attacksTotal != null && st.attacksBase != null) {
+      attacks = Math.max(0, st.attacksTotal - st.attacksBase);
+    }
+
+    rows.push({
       tag,
       name: st?.name || p?.name || tag,
       clanTag: st?.clanTag ?? null,
@@ -71,7 +84,7 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
       received,
       net: donated - received,
       ratio: received > 0 ? donated / received : null,
-      attacks: st?.attacksTotal != null && st.attacksBase != null ? Math.max(0, st.attacksTotal - st.attacksBase) : 0,
+      attacks,
       attackWins: st?.attackWins ?? 0,
       defenseWins: st?.defenseWins ?? 0,
       attacksComplete: st?.attacksBase != null,
@@ -82,21 +95,27 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
       isTracked: p?.isTracked ?? false,
       inFamilyClan: st?.clanTag ? familyTags.has(st.clanTag) : false,
       updatedAt: st?.updatedAt ?? old?.updatedAt ?? null,
-    };
+    });
+  }
+
+  rows.sort((a, b) => {
+    if (a.donated !== b.donated) return b.donated - a.donated;
+    return a.name.localeCompare(b.name);
   });
-  rows.sort((a, b) => b.donated - a.donated || a.name.localeCompare(b.name));
+
+  const totals = { players: rows.length, donated: 0, received: 0, attacks: 0, rankedWins: 0 };
+  for (const r of rows) {
+    totals.donated += r.donated;
+    totals.received += r.received;
+    totals.attacks += r.attacks;
+    totals.rankedWins += r.attackWins;
+  }
 
   return {
     season,
     rows,
     clans: clanRows.map((c) => ({ tag: c.tag, name: c.name || c.tag })),
     lastUpdated,
-    totals: {
-      players: rows.length,
-      donated: rows.reduce((n, r) => n + r.donated, 0),
-      received: rows.reduce((n, r) => n + r.received, 0),
-      attacks: rows.reduce((n, r) => n + r.attacks, 0),
-      rankedWins: rows.reduce((n, r) => n + r.attackWins, 0),
-    },
+    totals,
   };
 }

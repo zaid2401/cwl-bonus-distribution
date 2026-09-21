@@ -32,14 +32,20 @@ export default async function StatsPage(props: PageProps<"/donations">) {
         <div>
           <h1 className="text-2xl font-bold">Season stats</h1>
           <p className="text-muted">
-            Game season {season} — resets with donations, same as the legend season. {board.totals.players} players ·{" "}
-            {board.totals.donated.toLocaleString()} donated · {board.totals.received.toLocaleString()} received ·{" "}
-            {board.totals.attacks.toLocaleString()} attacks ({board.totals.rankedWins.toLocaleString()} ranked)
+            Game season {season} — resets with donations, same as the legend season. {board.totals.players}{" "}
+            players · {board.totals.donated.toLocaleString()} donated ·{" "}
+            {board.totals.received.toLocaleString()} received · {board.totals.attacks.toLocaleString()}{" "}
+            attacks ({board.totals.rankedWins.toLocaleString()} ranked)
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {seasons.map((sn) => (
-            <Link key={sn} href={link({ season: sn })} className={`btn btn-sm ${sn === season ? "border-accent text-accent" : ""}`} prefetch={false}>
+            <Link
+              key={sn}
+              href={link({ season: sn })}
+              className={`btn btn-sm ${sn === season ? "border-accent text-accent" : ""}`}
+              prefetch={false}
+            >
               {sn}
               {sn === current && " (live)"}
             </Link>
@@ -49,7 +55,12 @@ export default async function StatsPage(props: PageProps<"/donations">) {
 
       <div className="flex flex-wrap gap-1">
         {VIEWS.map((v) => (
-          <Link key={v.id} href={link({ view: v.id })} className={`btn ${v.id === view ? "border-accent text-accent" : ""}`} prefetch={false}>
+          <Link
+            key={v.id}
+            href={link({ view: v.id })}
+            className={`btn ${v.id === view ? "border-accent text-accent" : ""}`}
+            prefetch={false}
+          >
             {v.label}
           </Link>
         ))}
@@ -65,8 +76,8 @@ export default async function StatsPage(props: PageProps<"/donations">) {
             intervalSeconds={120}
           />
           <p className="text-xs text-muted">
-            Reads every family-clan member plus tracked players, one by one, so attack wins are included. The daily job does this
-            automatically; refresh here when you want the numbers right now.
+            Reads every family-clan member plus tracked players, one by one, so attack wins are included. The
+            daily job does this automatically; refresh here when you want the numbers right now.
           </p>
           <TrackPlayer />
         </div>

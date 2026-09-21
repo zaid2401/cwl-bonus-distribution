@@ -19,9 +19,19 @@ export async function importHistory(source: string, idColumn: number, columns: H
     if (!col.seasonId.trim()) continue;
     await db
       .insert(s.seasons)
-      .values({ id: col.seasonId, label: col.label || col.seasonId, sortKey: col.sortKey, status: "finalized" })
-      .onConflictDoUpdate({ target: s.seasons.id, set: { label: col.label || col.seasonId, sortKey: col.sortKey } });
-    await db.delete(s.bonusHistory).where(sql`${s.bonusHistory.seasonId} = ${col.seasonId} and ${s.bonusHistory.source} = 'import'`);
+      .values({
+        id: col.seasonId,
+        label: col.label || col.seasonId,
+        sortKey: col.sortKey,
+        status: "finalized",
+      })
+      .onConflictDoUpdate({
+        target: s.seasons.id,
+        set: { label: col.label || col.seasonId, sortKey: col.sortKey },
+      });
+    await db
+      .delete(s.bonusHistory)
+      .where(sql`${s.bonusHistory.seasonId} = ${col.seasonId} and ${s.bonusHistory.source} = 'import'`);
     const values = new Map<string, typeof s.bonusHistory.$inferInsert>();
     for (const r of rows) {
       const raw = (r[idColumn] ?? "").trim();
@@ -29,7 +39,11 @@ export async function importHistory(source: string, idColumn: number, columns: H
       const key = raw.startsWith("#") ? `tag:${normTag(raw)}` : raw.replace(/^'/, "");
       values.set(key, { seasonId: col.seasonId, memberKey: key, source: "import" });
     }
-    if (values.size) await db.insert(s.bonusHistory).values([...values.values()]).onConflictDoNothing();
+    if (values.size)
+      await db
+        .insert(s.bonusHistory)
+        .values([...values.values()])
+        .onConflictDoNothing();
     marks += values.size;
   }
   return `Imported ${marks} bonus marks across ${columns.filter((c) => c.seasonId.trim()).length} season(s).`;
@@ -45,9 +59,13 @@ export async function importDonations(source: string, season: string, updateLink
   const cName = findCol(header, ["Name", "Player Name"]);
   const cUser = findCol(header, ["Username", "Discord Username"]);
   const cId = findCol(header, ["ID", "Discord ID", "User ID"]);
-  if (cTag < 0 || cDon < 0) throw new Error(`Need "Tag" and "Total Donated" columns. Found: ${header.join(", ")}`);
+  if (cTag < 0 || cDon < 0)
+    throw new Error(`Need "Tag" and "Total Donated" columns. Found: ${header.join(", ")}`);
 
-  const byTag = new Map<string, { donated: number; received: number; name: string; user: string; id: string }>();
+  const byTag = new Map<
+    string,
+    { donated: number; received: number; name: string; user: string; id: string }
+  >();
   for (const r of rows) {
     const tag = normTag(r[cTag]);
     if (!tag) continue;
@@ -64,7 +82,15 @@ export async function importDonations(source: string, season: string, updateLink
     const chunk = entries.slice(i, i + 500);
     await db
       .insert(s.donations)
-      .values(chunk.map(([tag, v]) => ({ season, playerTag: tag, clanTag: "IMPORT", donated: v.donated, received: v.received })))
+      .values(
+        chunk.map(([tag, v]) => ({
+          season,
+          playerTag: tag,
+          clanTag: "IMPORT",
+          donated: v.donated,
+          received: v.received,
+        })),
+      )
       .onConflictDoUpdate({
         target: [s.donations.season, s.donations.playerTag, s.donations.clanTag],
         set: { donated: sql`excluded.donated`, received: sql`excluded.received`, updatedAt: new Date() },
@@ -99,11 +125,18 @@ export async function importCwlExport(source: string, seasonId: string, clanTag:
   const cName = findCol(header, ["Name"]);
   const cTag = findCol(header, ["Tag"]);
   const cAtt = findCol(header, ["Number of Attacks", "Attacks"]);
-  if (cTag < 0 || cAtt < 0) throw new Error(`Need "Tag" and "Number of Attacks" columns. Found: ${header.join(", ")}`);
+  if (cTag < 0 || cAtt < 0)
+    throw new Error(`Need "Tag" and "Number of Attacks" columns. Found: ${header.join(", ")}`);
 
   await db
     .insert(s.seasons)
-    .values({ id: seasonId, label: seasonLabel(seasonId), sortKey: `${seasonId}-01`, donationSeason: prevMonth(seasonId), hasCwlData: true })
+    .values({
+      id: seasonId,
+      label: seasonLabel(seasonId),
+      sortKey: `${seasonId}-01`,
+      donationSeason: prevMonth(seasonId),
+      hasCwlData: true,
+    })
     .onConflictDoUpdate({ target: s.seasons.id, set: { hasCwlData: true } });
   const [clan] = await db.select().from(s.clans).where(eq(s.clans.tag, clanTag));
   await db

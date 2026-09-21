@@ -31,7 +31,8 @@ export async function coc<T>(path: string): Promise<T> {
       reason = body.reason ?? reason;
       message = body.message ?? message;
     } catch {}
-    if (res.status === 403) message = `Access denied (${reason}). Check the token and that IP 45.79.218.79 is whitelisted.`;
+    if (res.status === 403)
+      message = `Access denied (${reason}). Check the token and that IP 45.79.218.79 is whitelisted.`;
     throw new CocError(res.status, reason, message);
   }
 }
@@ -60,7 +61,13 @@ export interface ApiMember {
   townHallLevel?: number;
   townhallLevel?: number;
   mapPosition?: number;
-  attacks?: { attackerTag: string; defenderTag: string; stars: number; destructionPercentage: number; order: number }[];
+  attacks?: {
+    attackerTag: string;
+    defenderTag: string;
+    stars: number;
+    destructionPercentage: number;
+    order: number;
+  }[];
   donations?: number;
   donationsReceived?: number;
 }

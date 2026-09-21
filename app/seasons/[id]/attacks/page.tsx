@@ -17,11 +17,17 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
   if (!season) notFound();
 
   const clans = await attacksOverview(id);
-  const selected = typeof sp.clan === "string" ? clans.find((c) => tagSlug(c.clanTag) === sp.clan) : undefined;
+  const selected =
+    typeof sp.clan === "string" ? clans.find((c) => tagSlug(c.clanTag) === sp.clan) : undefined;
   const board = clans.length ? await attacksBoard(id, (selected ?? clans[0]).clanTag) : null;
 
   const totals = clans.reduce(
-    (a, c) => ({ full: a.full + c.full, players: a.players + c.players, pending: a.pending + c.pending, missed: a.missed + c.missed }),
+    (a, c) => ({
+      full: a.full + c.full,
+      players: a.players + c.players,
+      pending: a.pending + c.pending,
+      missed: a.missed + c.missed,
+    }),
     { full: 0, players: 0, pending: 0, missed: 0 },
   );
 
@@ -34,7 +40,8 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
           </Link>
           <h1 className="mt-1 text-2xl font-bold">Attacks · {season.label}</h1>
           <p className="text-muted">
-            {totals.full}/{totals.players} players on 7/7 · <span className="text-warn">{totals.pending} attacks still open</span> ·{" "}
+            {totals.full}/{totals.players} players on 7/7 ·{" "}
+            <span className="text-warn">{totals.pending} attacks still open</span> ·{" "}
             <span className="text-bad">{totals.missed} missed</span>
           </p>
         </div>
@@ -60,12 +67,20 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
           </thead>
           <tbody>
             {clans.map((c) => (
-              <tr key={c.clanTag} className={`hover:bg-panel2 ${board?.clanTag === c.clanTag ? "bg-panel2" : ""}`}>
+              <tr
+                key={c.clanTag}
+                className={`hover:bg-panel2 ${board?.clanTag === c.clanTag ? "bg-panel2" : ""}`}
+              >
                 <td className="td">
-                  <Link href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${tagSlug(c.clanTag)}`} className="font-semibold text-accent hover:underline">
+                  <Link
+                    href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${tagSlug(c.clanTag)}`}
+                    className="font-semibold text-accent hover:underline"
+                  >
                     {c.clanName}
                   </Link>
-                  {c.liveRound && <span className="chip ml-2 bg-warn/15 text-warn">round {c.liveRound} live</span>}
+                  {c.liveRound && (
+                    <span className="chip ml-2 bg-warn/15 text-warn">round {c.liveRound} live</span>
+                  )}
                 </td>
                 <td className="td">{c.roundsEnded}/7</td>
                 <td className="td">

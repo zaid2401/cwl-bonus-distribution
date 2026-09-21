@@ -13,7 +13,10 @@ export default async function Home() {
   const db = await getDb();
   const seasons = await listSeasons();
   const [{ n: cwlClans }] = await db.select({ n: count() }).from(s.clans).where(ne(s.clans.cwlType, "none"));
-  const [{ n: allianceClans }] = await db.select({ n: count() }).from(s.clans).where(eq(s.clans.isAlliance, true));
+  const [{ n: allianceClans }] = await db
+    .select({ n: count() })
+    .from(s.clans)
+    .where(eq(s.clans.isAlliance, true));
   const counts = await db
     .select({ seasonId: s.cwlClanSeasons.seasonId, n: count() })
     .from(s.cwlClanSeasons)
@@ -27,7 +30,8 @@ export default async function Home() {
         <div>
           <h1 className="text-2xl font-bold">Seasons</h1>
           <p className="text-muted">
-            {cwlClans} CWL clan(s) · {allianceClans} alliance clan(s) · current donation season {gameSeasonAt(new Date())}
+            {cwlClans} CWL clan(s) · {allianceClans} alliance clan(s) · current donation season{" "}
+            {gameSeasonAt(new Date())}
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
@@ -42,7 +46,8 @@ export default async function Home() {
 
       {!tokenSet && (
         <div className="card border-warn/50 p-4 text-warn">
-          COC_API_TOKEN is not set — syncing is disabled. You can still use imports and manual editing. See Settings.
+          COC_API_TOKEN is not set — syncing is disabled. You can still use imports and manual editing. See
+          Settings.
         </div>
       )}
       {cwlClans === 0 && (
@@ -70,7 +75,10 @@ export default async function Home() {
             {seasons.map((se) => (
               <tr key={se.id} className="hover:bg-panel2">
                 <td className="td">
-                  <Link href={`/seasons/${encodeURIComponent(se.id)}`} className="font-semibold text-accent hover:underline">
+                  <Link
+                    href={`/seasons/${encodeURIComponent(se.id)}`}
+                    className="font-semibold text-accent hover:underline"
+                  >
                     {se.label}
                   </Link>
                 </td>

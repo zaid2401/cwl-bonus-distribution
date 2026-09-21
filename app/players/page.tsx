@@ -13,7 +13,14 @@ export default async function PlayersPage(props: PageProps<"/players">) {
   const conds: SQL[] = [];
   if (q) {
     const like = `%${q}%`;
-    conds.push(or(ilike(s.players.name, like), ilike(s.players.tag, like), ilike(s.players.discordUsername, like), ilike(s.players.discordId, like))!);
+    conds.push(
+      or(
+        ilike(s.players.name, like),
+        ilike(s.players.tag, like),
+        ilike(s.players.discordUsername, like),
+        ilike(s.players.discordId, like),
+      )!,
+    );
   }
   if (missing) conds.push(isNull(s.players.discordId));
   const rows = await db
@@ -27,7 +34,10 @@ export default async function PlayersPage(props: PageProps<"/players">) {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Players</h1>
-        <p className="text-muted">Discord links, priority numbers (PN1 = main, PN2+ = alt) and guest flags. Players are added automatically by syncs and imports.</p>
+        <p className="text-muted">
+          Discord links, priority numbers (PN1 = main, PN2+ = alt) and guest flags. Players are added
+          automatically by syncs and imports.
+        </p>
       </div>
       <form className="flex flex-wrap items-center gap-2">
         <input name="q" defaultValue={q} className="input w-72" placeholder="Search name, tag, Discord…" />
@@ -40,7 +50,9 @@ export default async function PlayersPage(props: PageProps<"/players">) {
             clear
           </Link>
         )}
-        <span className="ml-auto text-sm text-muted">{rows.length === 500 ? "Showing first 500" : `${rows.length} players`}</span>
+        <span className="ml-auto text-sm text-muted">
+          {rows.length === 500 ? "Showing first 500" : `${rows.length} players`}
+        </span>
       </form>
       <PlayersTable
         rows={rows.map((r) => ({

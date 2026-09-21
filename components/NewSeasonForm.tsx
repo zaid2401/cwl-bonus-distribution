@@ -12,7 +12,8 @@ export function NewSeasonForm() {
     <details className="card p-4">
       <summary className="cursor-pointer font-semibold">Create a season manually</summary>
       <p className="mt-2 text-muted">
-        Normally seasons are created automatically when you sync CWL. Use this for special events (e.g. <code>2026-06-2</code>).
+        Normally seasons are created automatically when you sync CWL. Use this for special events (e.g.{" "}
+        <code>2026-06-2</code>).
       </p>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <div>
@@ -21,9 +22,18 @@ export function NewSeasonForm() {
         </div>
         <div>
           <label className="label">Label (optional)</label>
-          <input className="input" placeholder="Sep 2026" value={label} onChange={(e) => setLabel(e.target.value)} />
+          <input
+            className="input"
+            placeholder="Sep 2026"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+          />
         </div>
-        <button className="btn btn-primary" disabled={pending || !id} onClick={() => exec(() => createSeason({ id, label }))}>
+        <button
+          className="btn btn-primary"
+          disabled={pending || !id}
+          onClick={() => exec(() => createSeason({ id, label }))}
+        >
           Create
         </button>
       </div>

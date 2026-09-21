@@ -9,7 +9,13 @@ import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
 import { coc, enc, type ApiClan, type ApiPlayer } from "./coc";
 import { snapshotDonations, snapshotPlayerStats, syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
-import { importCwlExport, importDonations, importHistory, importPlayers, type HistoryColumn } from "./imports";
+import {
+  importCwlExport,
+  importDonations,
+  importHistory,
+  importPlayers,
+  type HistoryColumn,
+} from "./imports";
 import { loadRows, writeSheetTab } from "./sheets";
 import { buildSeasonExport } from "./export";
 import { memberKey } from "./logic";
@@ -65,16 +71,24 @@ export async function addClan(input: { tag: string; cwlType: string; isAlliance:
     try {
       name = (await coc<ApiClan>(`/clans/${enc(tag)}`)).name;
     } catch {}
-    const [{ max }] = await db.select({ max: sql<number>`coalesce(max(${s.clans.sortOrder}), 0)` }).from(s.clans);
+    const [{ max }] = await db
+      .select({ max: sql<number>`coalesce(max(${s.clans.sortOrder}), 0)` })
+      .from(s.clans);
     await db
       .insert(s.clans)
       .values({ tag, name, cwlType: input.cwlType, isAlliance: input.isAlliance, sortOrder: Number(max) + 1 })
-      .onConflictDoUpdate({ target: s.clans.tag, set: { cwlType: input.cwlType, isAlliance: input.isAlliance } });
+      .onConflictDoUpdate({
+        target: s.clans.tag,
+        set: { cwlType: input.cwlType, isAlliance: input.isAlliance },
+      });
     return name ? `Added ${name} (${tag}).` : `Added ${tag}. (Name will fill in after the API is reachable.)`;
   });
 }
 
-export async function updateClan(tag: string, patch: Partial<{ name: string; cwlType: string; isAlliance: boolean; sortOrder: number }>) {
+export async function updateClan(
+  tag: string,
+  patch: Partial<{ name: string; cwlType: string; isAlliance: boolean; sortOrder: number }>,
+) {
   return run(async () => {
     const db = await getDb();
     await db.update(s.clans).set(patch).where(eq(s.clans.tag, tag));
@@ -144,7 +158,9 @@ export async function syncAll() {
     const bad = res.filter((r) => !r.ok);
     return {
       ok: bad.length === 0,
-      message: `${res.length - bad.length}/${res.length} clans synced.` + (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
+      message:
+        `${res.length - bad.length}/${res.length} clans synced.` +
+        (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
     };
   });
 }
@@ -155,7 +171,9 @@ export async function saveDonationsNow() {
     const bad = res.filter((r) => !r.ok);
     return {
       ok: bad.length === 0,
-      message: `Donations saved for ${res.length - bad.length}/${res.length} alliance clans.` + (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
+      message:
+        `Donations saved for ${res.length - bad.length}/${res.length} alliance clans.` +
+        (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
     };
   });
 }
@@ -192,7 +210,10 @@ export async function trackPlayer(rawTag: string) {
 export async function setTracked(tag: string, tracked: boolean) {
   return run(async () => {
     const db = await getDb();
-    await db.update(s.players).set({ isTracked: tracked, updatedAt: new Date() }).where(eq(s.players.tag, tag));
+    await db
+      .update(s.players)
+      .set({ isTracked: tracked, updatedAt: new Date() })
+      .where(eq(s.players.tag, tag));
     return tracked ? "Tracking this player." : "No longer tracking this player.";
   });
 }
@@ -207,7 +228,12 @@ type PartPatch = Partial<{
   remark: string | null;
 }>;
 
-export async function updateParticipant(seasonId: string, clanTag: string, playerTag: string, patch: PartPatch) {
+export async function updateParticipant(
+  seasonId: string,
+  clanTag: string,
+  playerTag: string,
+  patch: PartPatch,
+) {
   return run(async () => {
     const db = await getDb();
     const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
@@ -216,7 +242,10 @@ export async function updateParticipant(seasonId: string, clanTag: string, playe
     await db
       .insert(s.participants)
       .values({ seasonId, clanTag, playerTag, ...patch })
-      .onConflictDoUpdate({ target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag], set: patch });
+      .onConflictDoUpdate({
+        target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag],
+        set: patch,
+      });
     return "Saved.";
   });
 }
@@ -245,7 +274,12 @@ export async function setBonusOverride(seasonId: string, clanTag: string, value:
 
 // --- seasons
 
-export async function createSeason(input: { id: string; label?: string; sortKey?: string; donationSeason?: string }) {
+export async function createSeason(input: {
+  id: string;
+  label?: string;
+  sortKey?: string;
+  donationSeason?: string;
+}) {
   return run(async () => {
     const id = input.id.trim();
     if (!id) throw new Error("Season id is required (e.g. 2026-09).");
@@ -264,7 +298,10 @@ export async function createSeason(input: { id: string; label?: string; sortKey?
   });
 }
 
-export async function updateSeason(id: string, patch: Partial<{ label: string; sortKey: string; donationSeason: string | null }>) {
+export async function updateSeason(
+  id: string,
+  patch: Partial<{ label: string; sortKey: string; donationSeason: string | null }>,
+) {
   return run(async () => {
     const db = await getDb();
     await db.update(s.seasons).set(patch).where(eq(s.seasons.id, id));
@@ -276,7 +313,10 @@ export async function addClanToSeason(seasonId: string, clanTag: string) {
   return run(async () => {
     const db = await getDb();
     const [clan] = await db.select().from(s.clans).where(eq(s.clans.tag, clanTag));
-    await db.insert(s.cwlClanSeasons).values({ seasonId, clanTag, clanName: clan?.name ?? "" }).onConflictDoNothing();
+    await db
+      .insert(s.cwlClanSeasons)
+      .values({ seasonId, clanTag, clanName: clan?.name ?? "" })
+      .onConflictDoNothing();
     return "Added.";
   });
 }
@@ -289,7 +329,9 @@ export async function finalizeSeason(seasonId: string) {
       .from(s.participants)
       .leftJoin(s.players, eq(s.players.tag, s.participants.playerTag))
       .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.selected, true)));
-    await db.delete(s.bonusHistory).where(and(eq(s.bonusHistory.seasonId, seasonId), eq(s.bonusHistory.source, "app")));
+    await db
+      .delete(s.bonusHistory)
+      .where(and(eq(s.bonusHistory.seasonId, seasonId), eq(s.bonusHistory.source, "app")));
     const values = new Map<string, typeof s.bonusHistory.$inferInsert>();
     for (const { p, pl } of picked) {
       const key = memberKey(pl?.discordId, p.playerTag);
@@ -304,37 +346,54 @@ export async function finalizeSeason(seasonId: string) {
           target: [s.bonusHistory.seasonId, s.bonusHistory.memberKey],
           set: { playerTag: sql`excluded.player_tag`, source: "app" },
         });
-    await db.update(s.seasons).set({ status: "finalized", finalizedAt: new Date() }).where(eq(s.seasons.id, seasonId));
+    await db
+      .update(s.seasons)
+      .set({ status: "finalized", finalizedAt: new Date() })
+      .where(eq(s.seasons.id, seasonId));
     return `Finalized: ${values.size} bonus(es) recorded in history.`;
   });
 }
 
 // For a season that was decided by hand and imported, tick the players it names.
 // One account per member: main first, then most attacks, then most donations.
+// Compares score arrays left to right, biggest wins.
+function beats(a: number[], b: number[]) {
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return a[i] > b[i];
+  }
+  return false;
+}
+
 export async function applyRecordedBonuses(seasonId: string) {
   return run(async () => {
     const db = await getDb();
     const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
     if (season?.status === "finalized") throw new Error("Season is finalized. Reopen it first.");
     const recorded = new Set(
-      (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map((h) => h.memberKey),
+      (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map(
+        (h) => h.memberKey,
+      ),
     );
     if (!recorded.size) throw new Error("No bonus history recorded for this season yet. Import it first.");
 
     const clans = await seasonOverview(seasonId);
-    const best = new Map<string, { clanTag: string; playerTag: string; rank: number[] }>();
-    // biggest wins, left to right
-    const better = (a: number[], b: number[]) => {
-      const i = a.findIndex((v, k) => v !== b[k]);
-      return i >= 0 && a[i] > b[i];
-    };
+    const best = new Map<string, { clanTag: string; playerTag: string; score: number[] }>();
+
     for (const c of clans) {
       const board = await clanBoard(seasonId, c.clanTag, db);
       for (const row of board.rows) {
         if (!recorded.has(row.memberKey)) continue;
-        const rank = [row.selected ? 1 : 0, row.isAlt ? 0 : 1, row.eligible ? 1 : 0, row.attacks, row.donated];
-        const cur = best.get(row.memberKey);
-        if (!cur || better(rank, cur.rank)) best.set(row.memberKey, { clanTag: c.clanTag, playerTag: row.tag, rank });
+        const score = [
+          row.selected ? 1 : 0,
+          row.isAlt ? 0 : 1,
+          row.eligible ? 1 : 0,
+          row.attacks,
+          row.donated,
+        ];
+        const current = best.get(row.memberKey);
+        if (!current || beats(score, current.score)) {
+          best.set(row.memberKey, { clanTag: c.clanTag, playerTag: row.tag, score });
+        }
       }
     }
     for (const pick of best.values())
@@ -347,7 +406,10 @@ export async function applyRecordedBonuses(seasonId: string) {
         });
 
     const missing = recorded.size - best.size;
-    return `Ticked ${best.size} player(s) from recorded history.` + (missing > 0 ? ` ${missing} recorded member(s) have no account in this season's clans.` : "");
+    return (
+      `Ticked ${best.size} player(s) from recorded history.` +
+      (missing > 0 ? ` ${missing} recorded member(s) have no account in this season's clans.` : "")
+    );
   });
 }
 
@@ -366,8 +428,12 @@ export async function deleteSeason(seasonId: string) {
     await db.delete(s.participants).where(eq(s.participants.seasonId, seasonId));
     await db.delete(s.cwlClanSeasons).where(eq(s.cwlClanSeasons.seasonId, seasonId));
     await db.delete(s.cwlRoster).where(eq(s.cwlRoster.seasonId, seasonId));
-    await db.execute(sql`delete from cwl_attacks where war_tag in (select war_tag from cwl_wars where season_id = ${seasonId})`);
-    await db.execute(sql`delete from cwl_war_members where war_tag in (select war_tag from cwl_wars where season_id = ${seasonId})`);
+    await db.execute(
+      sql`delete from cwl_attacks where war_tag in (select war_tag from cwl_wars where season_id = ${seasonId})`,
+    );
+    await db.execute(
+      sql`delete from cwl_war_members where war_tag in (select war_tag from cwl_wars where season_id = ${seasonId})`,
+    );
     await db.delete(s.cwlWars).where(eq(s.cwlWars.seasonId, seasonId));
     await db.delete(s.seasons).where(eq(s.seasons.id, seasonId));
     return `Deleted season ${seasonId}.`;
@@ -380,7 +446,12 @@ export async function previewSheet(source: string) {
   try {
     await guard();
     const rows = await loadRows(source);
-    return { ok: true as const, header: rows[0] ?? [], sample: rows.slice(1, 6), total: Math.max(0, rows.length - 1) };
+    return {
+      ok: true as const,
+      header: rows[0] ?? [],
+      sample: rows.slice(1, 6),
+      total: Math.max(0, rows.length - 1),
+    };
   } catch (e) {
     return { ok: false as const, message: (e as Error).message };
   }
@@ -410,7 +481,10 @@ export async function doImportPlayers(source: string) {
 export async function saveSetting(key: string, value: string) {
   return run(async () => {
     const db = await getDb();
-    await db.insert(s.settings).values({ key, value }).onConflictDoUpdate({ target: s.settings.key, set: { value } });
+    await db
+      .insert(s.settings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: s.settings.key, set: { value } });
     return "Saved.";
   });
 }

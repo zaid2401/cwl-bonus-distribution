@@ -14,7 +14,8 @@ export default async function ImportPage() {
       <div>
         <h1 className="text-2xl font-bold">Import</h1>
         <p className="text-muted">
-          Paste a Google Sheet link (sharing: “Anyone with the link can view”, with the right tab open) or paste CSV text directly.
+          Paste a Google Sheet link (sharing: “Anyone with the link can view”, with the right tab open) or
+          paste CSV text directly.
         </p>
       </div>
       <ImportTabs

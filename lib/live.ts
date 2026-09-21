@@ -6,12 +6,25 @@ export async function donationTotals(db: DB, season: string, tags?: string[]) {
   const rows = await db
     .select()
     .from(s.donations)
-    .where(tags?.length ? and(eq(s.donations.season, season), inArray(s.donations.playerTag, tags)) : eq(s.donations.season, season));
-  const out = new Map<string, { donated: number; received: number; imported: boolean; clans: string[]; updatedAt: Date | null }>();
+    .where(
+      tags?.length
+        ? and(eq(s.donations.season, season), inArray(s.donations.playerTag, tags))
+        : eq(s.donations.season, season),
+    );
+  const out = new Map<
+    string,
+    { donated: number; received: number; imported: boolean; clans: string[]; updatedAt: Date | null }
+  >();
   for (const d of rows) {
     const cur = out.get(d.playerTag);
     if (d.clanTag === "IMPORT") {
-      out.set(d.playerTag, { donated: d.donated, received: d.received, imported: true, clans: cur?.clans ?? [], updatedAt: d.updatedAt });
+      out.set(d.playerTag, {
+        donated: d.donated,
+        received: d.received,
+        imported: true,
+        clans: cur?.clans ?? [],
+        updatedAt: d.updatedAt,
+      });
     } else if (cur?.imported) {
       cur.clans.push(d.clanTag);
     } else {
@@ -74,7 +87,12 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
   const wars = await db
     .select()
     .from(s.cwlWars)
-    .where(and(eq(s.cwlWars.seasonId, seasonId), or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag))))
+    .where(
+      and(
+        eq(s.cwlWars.seasonId, seasonId),
+        or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag)),
+      ),
+    )
     .orderBy(asc(s.cwlWars.round));
   const [cs] = await db
     .select()
@@ -96,10 +114,16 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
 
   const warTags = wars.map((w) => w.warTag);
   const members = warTags.length
-    ? await db.select().from(s.cwlWarMembers).where(and(inArray(s.cwlWarMembers.warTag, warTags), eq(s.cwlWarMembers.clanTag, clanTag)))
+    ? await db
+        .select()
+        .from(s.cwlWarMembers)
+        .where(and(inArray(s.cwlWarMembers.warTag, warTags), eq(s.cwlWarMembers.clanTag, clanTag)))
     : [];
   const attacks = warTags.length
-    ? await db.select().from(s.cwlAttacks).where(and(inArray(s.cwlAttacks.warTag, warTags), eq(s.cwlAttacks.clanTag, clanTag)))
+    ? await db
+        .select()
+        .from(s.cwlAttacks)
+        .where(and(inArray(s.cwlAttacks.warTag, warTags), eq(s.cwlAttacks.clanTag, clanTag)))
     : [];
   const roster = await db
     .select()
@@ -110,7 +134,8 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
   const stateOfRound = new Map(rounds.map((r) => [r.round, r.state]));
   const names = new Map<string, { name: string; th: number | null }>();
   for (const r of roster) names.set(r.playerTag, { name: r.name, th: r.townhall });
-  for (const m of members) names.set(m.playerTag, { name: m.name, th: m.townhall ?? names.get(m.playerTag)?.th ?? null });
+  for (const m of members)
+    names.set(m.playerTag, { name: m.name, th: m.townhall ?? names.get(m.playerTag)?.th ?? null });
 
   const lineup = new Map<string, Map<number, number>>(); // player -> round -> map position
   for (const m of members) {
@@ -124,30 +149,69 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
     hits.get(a.attackerTag)!.set(a.round, a);
   }
 
-  const roundNumbers = rounds.map((r) => r.round);
-  const rows: AttackRow[] = [...names.keys()].map((tag) => {
-    const cells: AttackCell[] = roundNumbers.map((round) => {
-      const pos = lineup.get(tag)?.get(round);
+  const rows: AttackRow[] = [];
+  for (const [tag, who] of names) {
+    const cells: AttackCell[] = [];
+    let attacksMade = 0;
+    let stars = 0;
+    let inLineup = 0;
+    let pending = 0;
+    let missed = 0;
+
+    for (const { round } of rounds) {
+      const position = lineup.get(tag)?.get(round);
       const hit = hits.get(tag)?.get(round);
-      if (hit) return { state: "hit", stars: hit.stars, destruction: hit.destruction, defenderPosition: hit.defenderPosition, position: pos };
-      if (pos == null) return { state: "out" };
+
+      if (hit) {
+        cells.push({
+          state: "hit",
+          stars: hit.stars,
+          destruction: hit.destruction,
+          defenderPosition: hit.defenderPosition,
+          position,
+        });
+        attacksMade++;
+        stars += hit.stars;
+        inLineup++;
+        continue;
+      }
+      if (position == null) {
+        cells.push({ state: "out" });
+        continue;
+      }
+
+      inLineup++;
       const warState = stateOfRound.get(round);
-      // Prep day: nothing is due yet, so it isn't an open attack.
-      return { state: warState === "warEnded" ? "missed" : warState === "preparation" ? "prep" : "pending", position: pos };
-    });
-    return {
+      if (warState === "warEnded") {
+        cells.push({ state: "missed", position });
+        missed++;
+      } else if (warState === "preparation") {
+        // Prep day, so nothing is due yet and it is not an open attack.
+        cells.push({ state: "prep", position });
+      } else {
+        cells.push({ state: "pending", position });
+        pending++;
+      }
+    }
+
+    rows.push({
       tag,
-      name: names.get(tag)?.name || tag,
-      townhall: names.get(tag)?.th ?? null,
+      name: who.name || tag,
+      townhall: who.th,
       cells,
-      attacks: cells.filter((c) => c.state === "hit").length,
-      stars: cells.reduce((n, c) => n + (c.stars ?? 0), 0),
-      inLineup: cells.filter((c) => c.state !== "out").length,
-      pending: cells.filter((c) => c.state === "pending").length,
-      missed: cells.filter((c) => c.state === "missed").length,
-    };
+      attacks: attacksMade,
+      stars,
+      inLineup,
+      pending,
+      missed,
+    });
+  }
+
+  rows.sort((a, b) => {
+    if (a.attacks !== b.attacks) return b.attacks - a.attacks;
+    if (a.stars !== b.stars) return b.stars - a.stars;
+    return a.name.localeCompare(b.name);
   });
-  rows.sort((a, b) => b.attacks - a.attacks || b.stars - a.stars || a.name.localeCompare(b.name));
 
   return {
     clanTag,

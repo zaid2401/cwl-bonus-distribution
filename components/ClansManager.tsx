@@ -38,7 +38,12 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-72 flex-1">
             <label className="label">Clan tag(s) — separate several with spaces or commas</label>
-            <input className="input w-full" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="#2PP #ABC123" />
+            <input
+              className="input w-full"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="#2PP #ABC123"
+            />
           </div>
           <div>
             <label className="label">Type</label>
@@ -51,7 +56,8 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
             </select>
           </div>
           <label className="flex items-center gap-2 pb-2 text-sm">
-            <input type="checkbox" checked={isAlliance} onChange={(e) => setAlliance(e.target.checked)} /> Alliance clan (track donations)
+            <input type="checkbox" checked={isAlliance} onChange={(e) => setAlliance(e.target.checked)} />{" "}
+            Alliance clan (track donations)
           </label>
           <button className="btn btn-primary" disabled={pending || !tags.trim()} onClick={addAll}>
             {pending ? "Adding…" : "Add"}
@@ -101,15 +107,27 @@ function ClanRow({ clan }: { clan: Clan }) {
           className="input w-16 py-1"
           value={order}
           onChange={(e) => setOrder(e.target.value.replace(/\D/g, ""))}
-          onBlur={() => Number(order) !== clan.sortOrder && exec(() => updateClan(clan.tag, { sortOrder: Number(order) }))}
+          onBlur={() =>
+            Number(order) !== clan.sortOrder && exec(() => updateClan(clan.tag, { sortOrder: Number(order) }))
+          }
         />
       </td>
       <td className="td">
-        <input className="input w-56 py-1" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== clan.name && exec(() => updateClan(clan.tag, { name }))} />
+        <input
+          className="input w-56 py-1"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => name !== clan.name && exec(() => updateClan(clan.tag, { name }))}
+        />
       </td>
       <td className="td text-muted">{clan.tag}</td>
       <td className="td">
-        <select className="input py-1" value={clan.cwlType} disabled={pending} onChange={(e) => exec(() => updateClan(clan.tag, { cwlType: e.target.value }))}>
+        <select
+          className="input py-1"
+          value={clan.cwlType}
+          disabled={pending}
+          onChange={(e) => exec(() => updateClan(clan.tag, { cwlType: e.target.value }))}
+        >
           {TYPES.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
@@ -118,10 +136,19 @@ function ClanRow({ clan }: { clan: Clan }) {
         </select>
       </td>
       <td className="td">
-        <input type="checkbox" checked={clan.isAlliance} disabled={pending} onChange={(e) => exec(() => updateClan(clan.tag, { isAlliance: e.target.checked }))} />
+        <input
+          type="checkbox"
+          checked={clan.isAlliance}
+          disabled={pending}
+          onChange={(e) => exec(() => updateClan(clan.tag, { isAlliance: e.target.checked }))}
+        />
       </td>
       <td className="td text-right">
-        <button className="btn btn-danger btn-sm" disabled={pending} onClick={() => confirm(`Remove ${clan.name || clan.tag}?`) && exec(() => deleteClan(clan.tag))}>
+        <button
+          className="btn btn-danger btn-sm"
+          disabled={pending}
+          onClick={() => confirm(`Remove ${clan.name || clan.tag}?`) && exec(() => deleteClan(clan.tag))}
+        >
           Remove
         </button>
         {result && !result.ok && <Result result={result} />}

@@ -43,6 +43,13 @@
       "when": 1789947640116,
       "tag": "0005_attacks_total",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790059902115,
+      "tag": "0006_clan_season_active",
+      "breakpoints": true
     }
   ]
 }

@@ -122,6 +122,14 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
   if (season.status === "finalized")
     return { clanTag, ok: true, message: `Season ${season.label} is finalized — skipped.` };
 
+  const [known] = await db
+    .select()
+    .from(s.cwlClanSeasons)
+    .where(and(eq(s.cwlClanSeasons.seasonId, season.id), eq(s.cwlClanSeasons.clanTag, clanTag)));
+  if (known && !known.active) {
+    return { clanTag, ok: true, message: `Not used in ${season.label}, skipped.` };
+  }
+
   const ours = group.clans.find((c) => c.tag === clanTag);
   await db
     .insert(s.cwlClanSeasons)

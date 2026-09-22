@@ -39,6 +39,7 @@ export interface ClanSummary {
   clanTag: string;
   clanName: string;
   cwlType: string;
+  active: boolean;
   wins: number;
   losses: number;
   ties: number;
@@ -90,6 +91,7 @@ export async function seasonOverview(seasonId: string): Promise<ClanSummary[]> {
       clanTag: cs.clanTag,
       clanName: board.clanName,
       cwlType: clan?.cwlType ?? "cwl",
+      active: cs.active,
       wins: board.wins,
       losses: board.losses,
       ties: board.ties,
@@ -145,6 +147,7 @@ export interface Board {
   clanTag: string;
   clanName: string;
   cwlType: string;
+  active: boolean;
   wins: number;
   losses: number;
   ties: number;
@@ -363,6 +366,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     clanTag,
     clanName: cs?.clanName || clan?.name || clanTag,
     cwlType: clan?.cwlType ?? "cwl",
+    active: cs?.active ?? true,
     wins: rec.wins,
     losses: rec.losses,
     ties: rec.ties,

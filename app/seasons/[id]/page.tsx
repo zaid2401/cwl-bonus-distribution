@@ -4,6 +4,7 @@ import { getDb, schema as s } from "@/lib/db";
 import { getSeason, seasonOverview } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
 import { SeasonSettings } from "@/components/SeasonSettings";
+import { ClanSeasonToggle } from "@/components/ClanSeasonToggle";
 import {
   applyRecordedBonuses,
   deleteSeason,
@@ -26,15 +27,14 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
   const allClans = await db.select().from(s.clans);
   const finalized = season.status === "finalized";
 
-  const totals = clans.reduce(
-    (a, c) => ({
-      bonuses: a.bonuses + c.bonuses,
-      selected: a.selected + c.selected,
-      eligible: a.eligible + c.eligible,
-      recorded: a.recorded + c.recorded,
-    }),
-    { bonuses: 0, selected: 0, eligible: 0, recorded: 0 },
-  );
+  const inUse = clans.filter((c) => c.active);
+  const totals = { bonuses: 0, selected: 0, eligible: 0, recorded: 0 };
+  for (const c of inUse) {
+    totals.bonuses += c.bonuses;
+    totals.selected += c.selected;
+    totals.eligible += c.eligible;
+    totals.recorded += c.recorded;
+  }
 
   return (
     <div className="space-y-6">
@@ -53,7 +53,8 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           </h1>
           <p className="text-muted">
             Donations from season <b className="text-text">{season.donationSeason ?? "—"}</b> ·{" "}
-            {totals.selected}/{totals.bonuses} bonuses picked · {totals.eligible} eligible players
+            {totals.selected}/{totals.bonuses} bonuses picked · {totals.eligible} eligible players ·{" "}
+            {inUse.length} of {clans.length} clans in use
             {totals.recorded > 0 && <> · {totals.recorded} already in bonus history</>}
           </p>
         </div>
@@ -96,6 +97,9 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
         <table className="w-full border-collapse">
           <thead>
             <tr>
+              <th className="th" title="Clans you are actually using for CWL this season">
+                In use
+              </th>
               <th className="th">Clan</th>
               <th className="th">W / L / T</th>
               <th className="th">Bonuses</th>
@@ -110,7 +114,15 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
             {clans.map((c) => {
               const done = c.selected === c.bonuses;
               return (
-                <tr key={c.clanTag} className="hover:bg-panel2">
+                <tr key={c.clanTag} className={c.active ? "hover:bg-panel2" : "opacity-45 hover:opacity-100"}>
+                  <td className="td">
+                    <ClanSeasonToggle
+                      seasonId={id}
+                      clanTag={c.clanTag}
+                      active={c.active}
+                      disabled={finalized}
+                    />
+                  </td>
                   <td className="td">
                     <Link
                       href={`/seasons/${encodeURIComponent(id)}/${tagSlug(c.clanTag)}`}
@@ -119,6 +131,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
                       {c.clanName}
                     </Link>
                     <div className="text-xs text-muted">{c.clanTag}</div>
+                    {!c.active && <span className="chip bg-panel2 text-muted">not this season</span>}
                   </td>
                   <td className="td whitespace-nowrap">
                     <span className="text-good">{c.wins}</span> / <span className="text-bad">{c.losses}</span>{" "}
@@ -162,7 +175,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
             })}
             {clans.length === 0 && (
               <tr>
-                <td className="td text-muted" colSpan={8}>
+                <td className="td text-muted" colSpan={9}>
                   No clans in this season yet.
                 </td>
               </tr>

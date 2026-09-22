@@ -239,7 +239,7 @@ export async function attacksOverview(seasonId: string): Promise<AttackSummary[]
     .select({ cs: s.cwlClanSeasons })
     .from(s.cwlClanSeasons)
     .leftJoin(s.clans, eq(s.clans.tag, s.cwlClanSeasons.clanTag))
-    .where(eq(s.cwlClanSeasons.seasonId, seasonId))
+    .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.active, true)))
     .orderBy(asc(s.clans.sortOrder), asc(s.cwlClanSeasons.clanName));
 
   const out: AttackSummary[] = [];

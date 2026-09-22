@@ -1,0 +1,1 @@
+ALTER TABLE "cwl_clan_seasons" ADD COLUMN "active" boolean DEFAULT true NOT NULL;

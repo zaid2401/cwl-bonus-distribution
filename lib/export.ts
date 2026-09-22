@@ -8,7 +8,7 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
   const db = await getDb();
   const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
   if (!season) throw new Error("Season not found");
-  const clans = await seasonOverview(seasonId);
+  const clans = (await seasonOverview(seasonId)).filter((c) => c.active);
 
   const rows: SheetExport["rows"] = [];
   const greenRows: number[] = [];

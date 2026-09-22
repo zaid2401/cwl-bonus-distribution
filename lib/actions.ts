@@ -309,6 +309,17 @@ export async function updateSeason(
   });
 }
 
+export async function setClanActive(seasonId: string, clanTag: string, active: boolean) {
+  return run(async () => {
+    const db = await getDb();
+    await db
+      .update(s.cwlClanSeasons)
+      .set({ active })
+      .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.clanTag, clanTag)));
+    return active ? "Using this clan for the season." : "Left out of this season.";
+  });
+}
+
 export async function addClanToSeason(seasonId: string, clanTag: string) {
   return run(async () => {
     const db = await getDb();
@@ -376,7 +387,7 @@ export async function applyRecordedBonuses(seasonId: string) {
     );
     if (!recorded.size) throw new Error("No bonus history recorded for this season yet. Import it first.");
 
-    const clans = await seasonOverview(seasonId);
+    const clans = (await seasonOverview(seasonId)).filter((c) => c.active);
     const best = new Map<string, { clanTag: string; playerTag: string; score: number[] }>();
 
     for (const c of clans) {

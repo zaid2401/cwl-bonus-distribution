@@ -26,6 +26,9 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
           </Link>
           <h1 className="mt-1 text-2xl font-bold">
             {board.clanName} <span className="text-base font-normal text-muted">{board.clanTag}</span>
+            {!board.active && (
+              <span className="chip ml-2 bg-panel2 align-middle text-muted">not used this season</span>
+            )}
           </h1>
           <p className="text-muted">
             Record <span className="text-good">{board.wins}W</span> /{" "}

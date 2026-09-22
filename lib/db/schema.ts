@@ -47,6 +47,8 @@ export const cwlClanSeasons = pgTable(
     seasonId: text("season_id").notNull(),
     clanTag: text("clan_tag").notNull(),
     clanName: text("clan_name").notNull().default(""),
+    // Off for a clan that is added but not being used this CWL.
+    active: boolean("active").notNull().default(true),
     bonusOverride: integer("bonus_override"),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
     syncMessage: text("sync_message"),

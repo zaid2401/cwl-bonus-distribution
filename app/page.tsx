@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { count, eq, ne } from "drizzle-orm";
+import { count } from "drizzle-orm";
 import { getDb, schema as s } from "@/lib/db";
 import { listSeasons } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
@@ -12,11 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const db = await getDb();
   const seasons = await listSeasons();
-  const [{ n: cwlClans }] = await db.select({ n: count() }).from(s.clans).where(ne(s.clans.cwlType, "none"));
-  const [{ n: allianceClans }] = await db
-    .select({ n: count() })
-    .from(s.clans)
-    .where(eq(s.clans.isAlliance, true));
+  const [{ n: cwlClans }] = await db.select({ n: count() }).from(s.clans);
   const counts = await db
     .select({ seasonId: s.cwlClanSeasons.seasonId, n: count() })
     .from(s.cwlClanSeasons)
@@ -30,8 +26,7 @@ export default async function Home() {
         <div>
           <h1 className="text-2xl font-bold">Seasons</h1>
           <p className="text-muted">
-            {cwlClans} CWL clan(s) · {allianceClans} alliance clan(s) · current donation season{" "}
-            {gameSeasonAt(new Date())}
+            {cwlClans} CWL clan(s) · current donation season {gameSeasonAt(new Date())}
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">

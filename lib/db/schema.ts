@@ -3,9 +3,6 @@ import { pgTable, text, integer, boolean, real, timestamp, primaryKey, index } f
 export const clans = pgTable("clans", {
   tag: text("tag").primaryKey(),
   name: text("name").notNull().default(""),
-  isAlliance: boolean("is_alliance").notNull().default(true),
-  // 'none' | 'cwl'
-  cwlType: text("cwl_type").notNull().default("none"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

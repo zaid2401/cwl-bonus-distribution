@@ -62,7 +62,7 @@ export async function logout() {
 
 // --- clans
 
-export async function addClan(input: { tag: string; cwlType: string; isAlliance: boolean }) {
+export async function addClan(input: { tag: string }) {
   return run(async () => {
     const tag = normTag(input.tag);
     if (tag.length < 4) throw new Error("Enter a valid clan tag.");
@@ -76,19 +76,13 @@ export async function addClan(input: { tag: string; cwlType: string; isAlliance:
       .from(s.clans);
     await db
       .insert(s.clans)
-      .values({ tag, name, cwlType: input.cwlType, isAlliance: input.isAlliance, sortOrder: Number(max) + 1 })
-      .onConflictDoUpdate({
-        target: s.clans.tag,
-        set: { cwlType: input.cwlType, isAlliance: input.isAlliance },
-      });
+      .values({ tag, name, sortOrder: Number(max) + 1 })
+      .onConflictDoNothing();
     return name ? `Added ${name} (${tag}).` : `Added ${tag}. (Name will fill in after the API is reachable.)`;
   });
 }
 
-export async function updateClan(
-  tag: string,
-  patch: Partial<{ name: string; cwlType: string; isAlliance: boolean; sortOrder: number }>,
-) {
+export async function updateClan(tag: string, patch: Partial<{ name: string; sortOrder: number }>) {
   return run(async () => {
     const db = await getDb();
     await db.update(s.clans).set(patch).where(eq(s.clans.tag, tag));
@@ -260,23 +254,15 @@ export async function updateSeason(
 export async function setClanActive(seasonId: string, clanTag: string, active: boolean) {
   return run(async () => {
     const db = await getDb();
-    await db
-      .update(s.cwlClanSeasons)
-      .set({ active })
-      .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.clanTag, clanTag)));
-    return active ? "Using this clan for the season." : "Left out of this season.";
-  });
-}
-
-export async function addClanToSeason(seasonId: string, clanTag: string) {
-  return run(async () => {
-    const db = await getDb();
     const [clan] = await db.select().from(s.clans).where(eq(s.clans.tag, clanTag));
     await db
       .insert(s.cwlClanSeasons)
-      .values({ seasonId, clanTag, clanName: clan?.name ?? "" })
-      .onConflictDoNothing();
-    return "Added.";
+      .values({ seasonId, clanTag, clanName: clan?.name ?? "", active })
+      .onConflictDoUpdate({
+        target: [s.cwlClanSeasons.seasonId, s.cwlClanSeasons.clanTag],
+        set: { active },
+      });
+    return active ? "Using this clan for the season." : "Left out of this season.";
   });
 }
 

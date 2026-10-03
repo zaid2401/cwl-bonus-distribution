@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import { coc, CocError, enc, pool, type ApiLeagueGroup, type ApiWar, type ApiMember } from "./coc";
 import { cwlSeasonId, prevMonth, seasonLabel } from "./util";
@@ -183,7 +183,7 @@ export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
 
 export async function syncAllCwl(): Promise<SyncResult[]> {
   const db = await getDb();
-  const list = await db.select().from(s.clans).where(ne(s.clans.cwlType, "none"));
+  const list = await db.select().from(s.clans);
   return pool(list, 3, (c) => syncCwlClan(c.tag));
 }
 

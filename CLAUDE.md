@@ -44,8 +44,10 @@ against that member's history.
 - **Seasons are keyed by month** (`2026-09`). The API reports a league group's _start date_, and
   groups start on different days, so always run it through `cwlSeasonId()`. Two events in one month
   use ids like `2026-06` and `2026-06-2`, ordered by `sortKey`.
-- `cwl_clan_seasons.active` says whether a clan is being used for CWL that season. Unticking it
-  removes the clan from totals, exports and sync, without touching past seasons.
+- `cwl_clan_seasons.active` says whether a clan is being used for CWL that season, and the tick list
+  on the season page is the only control for it. Syncing a clan that is in a league group creates the
+  row ticked; unticking removes the clan from totals, exports and sync without touching past seasons.
+- Every row in `clans` is a CWL clan. There is no clan type and no alliance flag any more.
 - `donations` is the only source of donation numbers: sheet imports (`clan_tag = 'IMPORT'`) and the
   clan snapshots an older version collected. An import always wins. Nothing writes to it from the
   game API any more, so a season without an import shows zeros.
@@ -101,9 +103,9 @@ memory note on writing code that reads as human-written.
 
 ## Deliberately absent
 
-Multiplayer attack tracking, the Latecomers clan type, and every form of live donation tracking (the
-Donations page, `player_stats`, tracked players, the daily snapshot) were all removed. Donations
-arrive by import now. Don't bring any of it back without asking.
+Multiplayer attack tracking, the Latecomers clan type, the alliance/CWL clan split, and every form of
+live donation tracking (the Donations page, `player_stats`, tracked players, the daily snapshot) were
+all removed. Donations arrive by import now. Don't bring any of it back without asking.
 
 Setup and deployment steps (Supabase, Vercel, the API key, the Google service account) live in
 `README.md`.

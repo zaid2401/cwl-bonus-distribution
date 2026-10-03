@@ -71,6 +71,13 @@
       "when": 1791055673660,
       "tag": "0009_rename_guest_to_external",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791056206312,
+      "tag": "0010_clans_are_all_cwl",
+      "breakpoints": true
     }
   ]
 }

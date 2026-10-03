@@ -12,16 +12,14 @@ export default async function ClansPage() {
       <div>
         <h1 className="text-2xl font-bold">Clans</h1>
         <p className="text-muted">
-          <b>CWL</b> clans are synced for CWL attacks and wins. <b>Alliance</b> marks a clan as part of the
-          JPA family. A clan can be both.
+          Every clan here is synced for CWL attacks and wins. Pick the ones you are actually using on each
+          season's page.
         </p>
       </div>
       <ClansManager
         clans={clans.map((c) => ({
           tag: c.tag,
           name: c.name,
-          cwlType: c.cwlType,
-          isAlliance: c.isAlliance,
           sortOrder: c.sortOrder,
         }))}
       />

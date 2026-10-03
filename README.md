@@ -62,10 +62,19 @@ COC_API_TOKEN=your-token
 
 ## Preference numbers
 
-**Sync PN** on a season page reads every CWL application for that season from clashwithjpa.com and
-writes each player's preference number onto that season's boards. A player with no application keeps
-whatever PN the Players page holds for them, and re-syncing overwrites hand edits — the website is
-where PN is decided.
+Preference numbers come from each member's CWL application on clashwithjpa.com. A player with no
+application keeps whatever PN the Players page holds for them, and re-syncing overwrites hand edits —
+the website is where PN is decided.
+
+Cloudflare challenges that API when the call comes from Vercel, so the **Sync PN** button on a season
+page only works if that ever changes. Until then, run it from your own machine:
+
+```bash
+npm run sync-pn            # the newest season
+npm run sync-pn 2026-10    # a particular one
+```
+
+It reads `DATABASE_URL` and `JPA_API_KEY` from `.env.local`, so it writes straight to production.
 
 ## A second login for the bonus leader
 

@@ -103,7 +103,12 @@ Their seasons are integer ids with a month name and year; ours are `2026-10`. `m
 pairs them on month and year, and when a month holds two CWLs it pairs them oldest first, so our
 `2026-06-2` finds their "June 2026 2". Applications page 100 at a time — a season is 300-odd.
 
-**Sync PN** overwrites whatever is on the board, hand edits included. That is the point: the
+**Cloudflare fronts that API and challenges the call when it comes from Vercel** — a "Just a
+moment…" page, which a server can never answer. The same call from a laptop goes straight
+through, so `npm run sync-pn [season]` does the job instead and the button explains itself when
+it is turned away. `lib/pn.ts` holds the logic both of them call.
+
+**Sync PN overwrites whatever is on the board**, hand edits included. That is the point: the
 website is the source of truth for PN.
 
 ## Clash of Clans API gotchas
@@ -127,6 +132,7 @@ npx tsx --test tests/logic.test.ts                          # one file
 npx tsx --test --test-name-pattern "star steal" tests/*.ts  # one test
 
 npm run mock-coc             # fake Clash of Clans API on :4010
+npm run sync-pn [season]     # preference numbers from clashwithjpa.com (newest season by default)
 npm run db:generate          # new migration after editing lib/db/schema.ts
 npm run db:migrate           # apply migrations to whatever DATABASE_URL points at
 ```

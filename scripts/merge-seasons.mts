@@ -41,6 +41,8 @@ for (const [table, keys] of [
   console.log(`${table}: moved ${moved}, dropped ${dropped} duplicate(s)`);
 }
 
-console.log(`cwl_wars: moved ${await n(sql`update cwl_wars set season_id = ${into} where season_id = ${from}`)}`);
+console.log(
+  `cwl_wars: moved ${await n(sql`update cwl_wars set season_id = ${into} where season_id = ${from}`)}`,
+);
 console.log(`seasons: removed ${await n(sql`delete from seasons where id = ${from}`)}`);
 process.exit(0);

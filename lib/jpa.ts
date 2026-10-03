@@ -7,12 +7,38 @@ type Envelope<T> = { success: true; data: T } | { success: false; error: unknown
 async function get<T>(path: string): Promise<T> {
   const key = process.env.JPA_API_KEY;
   if (!key) throw new Error("JPA_API_KEY is not set. Add it in Vercel and redeploy.");
-  const res = await fetch(`${BASE}${path}`, { headers: { "x-api-key": key }, cache: "no-store" });
-  const body = (await res.json().catch(() => null)) as Envelope<T> | null;
-  if (!body) throw new Error(`clashwithjpa ${path} answered ${res.status} with something that is not JSON.`);
+  const res = await fetch(`${BASE}${path}`, {
+    cache: "no-store",
+    headers: {
+      "x-api-key": key,
+      accept: "application/json",
+      // Cloudflare fronts that API and turns away callers that look like a script,
+      // which a serverless function with no user agent very much does.
+      "user-agent": "jpa-cwl-bonus (+https://cwl-bonus-distribution.vercel.app)",
+    },
+  });
+  const text = await res.text();
+  let body: Envelope<T> | null = null;
+  try {
+    body = JSON.parse(text) as Envelope<T>;
+  } catch {}
+
+  if (!body) {
+    // The API answers in JSON even when it refuses you, so anything else came from in
+    // front of it and the key was never looked at.
+    const edge = res.headers.get("cf-ray") ? "Cloudflare" : (res.headers.get("server") ?? "something");
+    throw new Error(
+      `clashwithjpa ${path}: ${res.status} from ${edge}, not from the API — the key was never checked. ` +
+        `Allow this app through the WAF. (${text
+          .replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 120)})`,
+    );
+  }
   if (!body.success) {
     const e = body.error;
-    throw new Error(`clashwithjpa ${path}: ${typeof e === "string" ? e : JSON.stringify(e)}`);
+    throw new Error(`clashwithjpa ${path}: ${res.status} ${typeof e === "string" ? e : JSON.stringify(e)}`);
   }
   return body.data;
 }

@@ -70,9 +70,9 @@ COC_API_TOKEN=your-token
 
 ## Season workflow
 
-1. **Clans**: add your CWL clan tags. This is a one-time step.
+1. **Clans**: add your CWL clan tags once, then tick **In use** for the ones you are running this CWL. Syncing ticks them for you as soon as they join a league group.
 2. **Import**: bonus history from your old sheet's `DB` tab (first time only), and the previous game season's donations, which decide the order on the board.
-3. On the season page, tick the clans you are using this CWL — syncing ticks them for you as soon as they join a league group. During and after CWL, the daily job syncs automatically. You can also click **Sync CWL now**. Sync within a few days of CWL ending, because the API drops the data after that. If you miss the window, import the ClashPerk `/export cwl` sheets instead.
+3. During and after CWL, the daily job syncs automatically. You can also click **Sync CWL now**. Sync within a few days of CWL ending, because the API drops the data after that. If you miss the window, import the ClashPerk `/export cwl` sheets instead.
 4. Open the season, then each clan. Link missing Discord IDs, set PN, external or **Left JPA**, and tick recipients. Use **Transfer to** to move a bonus to an alt.
 5. **Finalize season** writes the picks to bonus history. **Export to Google Sheet** makes a copy to share.
 

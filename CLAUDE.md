@@ -44,9 +44,11 @@ against that member's history.
 - **Seasons are keyed by month** (`2026-09`). The API reports a league group's _start date_, and
   groups start on different days, so always run it through `cwlSeasonId()`. Two events in one month
   use ids like `2026-06` and `2026-06-2`, ordered by `sortKey`.
-- `cwl_clan_seasons.active` says whether a clan is being used for CWL that season, and the tick list
-  on the season page is the only control for it. Syncing a clan that is in a league group creates the
-  row ticked; unticking removes the clan from totals, exports and sync without touching past seasons.
+- `cwl_clan_seasons.active` says whether a clan is being used for CWL that season. The **In use**
+  column on the Clans page is the only control for it, and it always means the current month, since
+  that is the only season you can still change your mind about. Syncing a clan that is in a league
+  group creates the row ticked; unticking removes the clan from totals, exports and sync without
+  touching past seasons. Ticking before the first sync creates the season row too.
 - Every row in `clans` is a CWL clan. There is no clan type and no alliance flag any more.
 - `donations` is the only source of donation numbers: sheet imports (`clan_tag = 'IMPORT'`) and the
   clan snapshots an older version collected. An import always wins. Nothing writes to it from the

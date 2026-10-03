@@ -254,6 +254,17 @@ export async function updateSeason(
 export async function setClanActive(seasonId: string, clanTag: string, active: boolean) {
   return run(async () => {
     const db = await getDb();
+    // Ticking clans is how you set a CWL up, so this can run before any sync has
+    // created the season.
+    await db
+      .insert(s.seasons)
+      .values({
+        id: seasonId,
+        label: seasonLabel(seasonId),
+        sortKey: `${seasonId}-01`,
+        donationSeason: prevMonth(seasonId),
+      })
+      .onConflictDoNothing();
     const [clan] = await db.select().from(s.clans).where(eq(s.clans.tag, clanTag));
     await db
       .insert(s.cwlClanSeasons)

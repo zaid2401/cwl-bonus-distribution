@@ -42,6 +42,11 @@ export function cwlSeasonId(apiSeason: string): string {
   return m ? `${m[1]}-${m[2]}` : String(apiSeason ?? "").trim();
 }
 
+// Seasons are keyed by month, so the CWL running right now is this month's.
+export function currentCwlSeason(now = new Date()): string {
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 export function prevMonth(season: string): string {
   const [y, m] = season.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 2, 1));

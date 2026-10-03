@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { addClan, deleteClan, updateClan } from "@/lib/actions";
 import { Result, useAction } from "./ActionButton";
+import { ClanSeasonToggle } from "./ClanSeasonToggle";
 
-type Clan = { tag: string; name: string; sortOrder: number };
+type Clan = { tag: string; name: string; sortOrder: number; inUse: boolean };
 
-export function ClansManager({ clans }: { clans: Clan[] }) {
+type SeasonProps = { seasonId: string; seasonLabel: string; finalized: boolean };
+
+export function ClansManager({ clans, ...season }: SeasonProps & { clans: Clan[] }) {
   const [tags, setTags] = useState("");
   const { pending, result, exec } = useAction();
 
@@ -52,16 +55,19 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
               <th className="th w-20">Order</th>
               <th className="th">Name</th>
               <th className="th">Tag</th>
+              <th className="th" title="Clans you are running in this CWL">
+                In use ({season.seasonLabel})
+              </th>
               <th className="th"></th>
             </tr>
           </thead>
           <tbody>
             {clans.map((c) => (
-              <ClanRow key={c.tag} clan={c} />
+              <ClanRow key={c.tag} clan={c} season={season} />
             ))}
             {clans.length === 0 && (
               <tr>
-                <td className="td text-muted" colSpan={4}>
+                <td className="td text-muted" colSpan={5}>
                   No clans yet.
                 </td>
               </tr>
@@ -73,7 +79,7 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
   );
 }
 
-function ClanRow({ clan }: { clan: Clan }) {
+function ClanRow({ clan, season }: { clan: Clan; season: SeasonProps }) {
   const { pending, result, exec } = useAction();
   const [name, setName] = useState(clan.name);
   const [order, setOrder] = useState(String(clan.sortOrder));
@@ -98,6 +104,14 @@ function ClanRow({ clan }: { clan: Clan }) {
         />
       </td>
       <td className="td text-muted">{clan.tag}</td>
+      <td className="td">
+        <ClanSeasonToggle
+          seasonId={season.seasonId}
+          clanTag={clan.tag}
+          active={clan.inUse}
+          disabled={season.finalized}
+        />
+      </td>
       <td className="td text-right">
         <button
           className="btn btn-danger btn-sm"

@@ -103,10 +103,12 @@ Their seasons are integer ids with a month name and year; ours are `2026-10`. `m
 pairs them on month and year, and when a month holds two CWLs it pairs them oldest first, so our
 `2026-06-2` finds their "June 2026 2". Applications page 100 at a time — a season is 300-odd.
 
-**Cloudflare fronts that API and challenges the call when it comes from Vercel** — a "Just a
-moment…" page, which a server can never answer. The same call from a laptop goes straight
-through, so `npm run sync-pn [season]` does the job instead and the button explains itself when
-it is turned away. `lib/pn.ts` holds the logic both of them call.
+**Cloudflare fronts that API and challenges any call from a datacentre** — a "Just a moment…"
+page, which a server can never answer. Vercel and GitHub Actions were both tried and both
+blocked, and the browser cannot do it either: the API allows no cross-origin calls. A laptop
+goes straight through, so `npm run sync-pn [season]` does the job and the button explains itself
+when it is turned away. `lib/pn.ts` holds the logic both of them call, and `JPA_API_BASE` is
+there for the day someone finds the origin hostname behind Cloudflare.
 
 **Sync PN overwrites whatever is on the board**, hand edits included. That is the point: the
 website is the source of truth for PN.

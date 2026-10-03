@@ -66,8 +66,10 @@ Preference numbers come from each member's CWL application on clashwithjpa.com. 
 application keeps whatever PN the Players page holds for them, and re-syncing overwrites hand edits —
 the website is where PN is decided.
 
-Cloudflare challenges that API when the call comes from Vercel, so the **Sync PN** button on a season
-page only works if that ever changes. Until then, run it from your own machine:
+Cloudflare sits in front of that API and answers with a "Just a moment…" challenge whenever the call
+comes from a datacentre — Vercel and GitHub Actions are both turned away, and the browser cannot do
+it either because the API allows no cross-origin calls. So the **Sync PN** button only works if that
+ever changes, and until then it runs from your own machine:
 
 ```bash
 npm run sync-pn            # the newest season
@@ -75,6 +77,16 @@ npm run sync-pn 2026-10    # a particular one
 ```
 
 It reads `DATABASE_URL` and `JPA_API_KEY` from `.env.local`, so it writes straight to production.
+
+To have Windows do it on the 5th of each month, import the task once (it catches up if the PC was
+off, and logs to `sync-pn.log`):
+
+```bash
+schtasks /create /tn "JPA CWL Sync PN" /xml scripts\sync-pn.task.xml
+```
+
+`scripts\sync-pn.cmd` is the same thing by double-click. The real fix, if a clanmate ever says where
+that API is deployed, is to point `JPA_API_BASE` at the origin host so the button works again.
 
 ## A second login for the bonus leader
 

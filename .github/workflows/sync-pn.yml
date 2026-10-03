@@ -19,13 +19,22 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
+      - name: Check the secrets are set
+        # Without this a missing secret just fails somewhere deeper, and the annotation on
+        # the run says nothing but "exit code 1".
+        run: |
+          test -n "$JPA_API_KEY" || { echo "::error::JPA_API_KEY repository secret is not set"; exit 1; }
+          test -n "$DATABASE_URL" || { echo "::error::DATABASE_URL repository secret is not set"; exit 1; }
+        env:
+          JPA_API_KEY: ${{ secrets.JPA_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - run: npm ci
       - run: npm run sync-pn
         env:

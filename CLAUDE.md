@@ -10,12 +10,16 @@ recording CWL bonuses, it does not belong in this app.
 
 ## The rules it encodes
 
-Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies when they used **7/7
-attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not ticked Alt** and
-have not been ticked **Left JPA** on that season's board. `players.is_alt_account` is the Alt tick,
-which is a different thing from the PN-derived `isAlt()`: the tick is for an account that is not the
-member's own main, PN is the member's own ordering. Among those, donations from the **previous game
-season** decide the order. Nobody is auto-picked: the board sorts and flags, Zaid ticks the boxes.
+Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies when all four hold:
+
+- **7/7 attacks** used,
+- **PN1**, their own main account (PN2 and up are that member's alts),
+- **Alt** not ticked on the player,
+- **Left JPA** not ticked on that season's board.
+
+Among those, donations from the **previous game season** decide the order, and those only exist once
+the sheet for that season has been imported. Nobody is auto-picked: the board sorts and flags, Zaid
+ticks the boxes.
 
 Flags are advisory only, never exclusions:
 
@@ -33,6 +37,7 @@ against that member's history.
 | Path                             | What lives there                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------ |
 | `lib/logic.ts`                   | Bonus rules, war results, star-steal detection. No database.                   |
+| `lib/util.ts`                    | Tag and season helpers: `normTag()`, `cwlSeasonId()`, `currentCwlSeason()`.    |
 | `lib/sync.ts`                    | Clash of Clans API pulls: CWL wars and rosters.                                |
 | `lib/view.ts`                    | The bonus board and season overview.                                           |
 | `lib/live.ts`                    | Round-by-round attack grid.                                                    |
@@ -46,16 +51,19 @@ against that member's history.
 - **Seasons are keyed by month** (`2026-09`). The API reports a league group's _start date_, and
   groups start on different days, so always run it through `cwlSeasonId()`. Two events in one month
   use ids like `2026-06` and `2026-06-2`, ordered by `sortKey`.
+- Every row in `clans` is a CWL clan. There is no clan type and no alliance flag any more.
 - `cwl_clan_seasons.active` says whether a clan is being used for CWL that season. The **In use**
   column on the Clans page is the only control for it, and it always means the current month, since
   that is the only season you can still change your mind about. Syncing a clan that is in a league
   group creates the row ticked; unticking removes the clan from totals, exports and sync without
   touching past seasons. Ticking before the first sync creates the season row too.
-- Every row in `clans` is a CWL clan. There is no clan type and no alliance flag any more.
 - `donations` holds the donation numbers, and only the `clan_tag = 'IMPORT'` rows are read. Without
   an import for a season the board shows blanks, not zeros, and says so in the header. The clan
   snapshots an older version collected are still in the table but ignored: they summed a player who
   changed clans twice.
+- `players.is_alt_account` (the **Alt** tick) and the PN-derived `isAlt()` are different things. The
+  tick marks an account that is nobody's main; PN is one member's own ordering. The board shows the
+  first as an `alt` chip and the second as `PN2`, `PN3` and so on.
 - `participants.left_jpa` disqualifies a player for that season only. It is per season on purpose:
   someone who rejoins starts clean next month.
 - `bonus_history` is keyed by **member**: the Discord ID, or `tag:#TAG` when unlinked.
@@ -97,7 +105,26 @@ somewhere scratch when running throwaway scripts.
 To drive the app against the mock game API, set `COC_API_BASE=http://localhost:4010/v1` and
 `COC_API_TOKEN=test` in `.env.local`.
 
-Migrations run automatically on first database use, so deploying is enough to apply them.
+Auth is off in dev when `ADMIN_PASSWORD` is empty, and `.env.development.local` wins over
+`.env.local`, so a file holding just `ADMIN_PASSWORD=` gets past the login screen. Delete it
+afterwards.
+
+## Migrations
+
+They run on first database use, so deploying is enough to apply them — and so is starting the dev
+server against the real `DATABASE_URL`. **That upgrades production.** When a migration drops or
+renames something, push the matching code promptly, or the live site is left querying a column that
+is no longer there.
+
+`npm run db:generate` diffs the schema against the last snapshot. A **column rename** needs an
+interactive answer and the command dies without a TTY, so write those by hand:
+
+1. The `.sql` file, with `ALTER TABLE ... RENAME COLUMN ...`.
+2. `drizzle/meta/000N_snapshot.json` — copy the previous snapshot, give it a fresh `id`, set
+   `prevId` to the old one's `id`, and rename the column inside.
+3. An entry in `drizzle/meta/_journal.json`.
+
+Then run `npm run db:generate` again: "No schema changes" means the snapshot matches.
 `scripts/merge-seasons.mts` merges two seasons if one ever splits.
 
 ## House style

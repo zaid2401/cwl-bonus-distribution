@@ -1,0 +1,32 @@
+# Preference numbers from clashwithjpa.com.
+#
+# This runs here rather than in the app because Cloudflare answers the call with a
+# challenge page when it comes from Vercel. Whether it lets a GitHub runner through is the
+# open question — if this job fails with "403 from Cloudflare", the answer is no, and
+# `npm run sync-pn` from a laptop stays the way to do it.
+name: Sync PN
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Just after the app's own 04:30 UTC sync, so the rosters are already fresh.
+    - cron: "45 4 * * *"
+
+concurrency:
+  group: sync-pn
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run sync-pn
+        env:
+          JPA_API_KEY: ${{ secrets.JPA_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

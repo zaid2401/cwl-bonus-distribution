@@ -11,12 +11,6 @@ export interface StatRow {
   received: number;
   net: number;
   ratio: number | null;
-  attacks: number;
-  attackWins: number;
-  defenseWins: number;
-  // false while a season is only partly covered by tracking.
-  attacksComplete: boolean;
-  trophies: number | null;
   townhall: number | null;
   discordUsername: string | null;
   discordId: string | null;
@@ -30,7 +24,7 @@ export interface StatsBoard {
   rows: StatRow[];
   clans: { tag: string; name: string }[];
   lastUpdated: Date | null;
-  totals: { players: number; donated: number; received: number; attacks: number; rankedWins: number };
+  totals: { players: number; donated: number; received: number };
 }
 
 export async function statsSeasons(): Promise<string[]> {
@@ -70,11 +64,6 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
     const donated = Math.max(st?.donated ?? 0, old?.donated ?? 0);
     const received = Math.max(st?.received ?? 0, old?.received ?? 0);
 
-    let attacks = 0;
-    if (st?.attacksTotal != null && st.attacksBase != null) {
-      attacks = Math.max(0, st.attacksTotal - st.attacksBase);
-    }
-
     rows.push({
       tag,
       name: st?.name || p?.name || tag,
@@ -84,11 +73,6 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
       received,
       net: donated - received,
       ratio: received > 0 ? donated / received : null,
-      attacks,
-      attackWins: st?.attackWins ?? 0,
-      defenseWins: st?.defenseWins ?? 0,
-      attacksComplete: st?.attacksBase != null,
-      trophies: st?.trophies ?? null,
       townhall: st?.townhall ?? null,
       discordUsername: p?.discordUsername ?? null,
       discordId: p?.discordId ?? null,
@@ -103,12 +87,10 @@ export async function statsBoard(season: string): Promise<StatsBoard> {
     return a.name.localeCompare(b.name);
   });
 
-  const totals = { players: rows.length, donated: 0, received: 0, attacks: 0, rankedWins: 0 };
+  const totals = { players: rows.length, donated: 0, received: 0 };
   for (const r of rows) {
     totals.donated += r.donated;
     totals.received += r.received;
-    totals.attacks += r.attacks;
-    totals.rankedWins += r.attackWins;
   }
 
   return {

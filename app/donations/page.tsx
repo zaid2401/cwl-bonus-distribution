@@ -11,7 +11,6 @@ export const dynamic = "force-dynamic";
 const VIEWS: { id: StatsView; label: string }[] = [
   { id: "both", label: "Donations + Received" },
   { id: "donations", label: "Donations" },
-  { id: "attacks", label: "Attacks" },
 ];
 
 export default async function StatsPage(props: PageProps<"/donations">) {
@@ -30,12 +29,11 @@ export default async function StatsPage(props: PageProps<"/donations">) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Season stats</h1>
+          <h1 className="text-2xl font-bold">Donations</h1>
           <p className="text-muted">
-            Game season {season} — resets with donations, same as the legend season. {board.totals.players}{" "}
-            players · {board.totals.donated.toLocaleString()} donated ·{" "}
-            {board.totals.received.toLocaleString()} received · {board.totals.attacks.toLocaleString()}{" "}
-            attacks ({board.totals.rankedWins.toLocaleString()} ranked)
+            Game season {season}, which resets with the legend season. {board.totals.players} players ·{" "}
+            {board.totals.donated.toLocaleString()} donated · {board.totals.received.toLocaleString()}{" "}
+            received
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -76,8 +74,8 @@ export default async function StatsPage(props: PageProps<"/donations">) {
             intervalSeconds={120}
           />
           <p className="text-xs text-muted">
-            Reads every family-clan member plus tracked players, one by one, so attack wins are included. The
-            daily job does this automatically; refresh here when you want the numbers right now.
+            Reads every family-clan member plus tracked players. The daily job does this automatically;
+            refresh here when you want the numbers right now.
           </p>
           <TrackPlayer />
         </div>

@@ -50,6 +50,13 @@
       "when": 1790059902115,
       "tag": "0006_clan_season_active",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791042792412,
+      "tag": "0007_drop_attack_stats",
+      "breakpoints": true
     }
   ]
 }

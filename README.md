@@ -6,9 +6,7 @@ Private web app for picking CWL bonus recipients.
 - Saves donations for all alliance clans every day, combined across clans.
 - Shows eligibility (7/7 attacks, main account, not a guest), bonus history for the last 6 seasons, and the **B2B** (3+ bonuses in the last 6 seasons) and **Star steal** flags.
 - You tick the recipients, move a bonus to an alt if needed, finalize, then export to Google Sheets or CSV.
-- **Season stats page**: per game season (the season that resets with donations), three tabs — Donations + Received, Donations, and Attacks.
-
-  Attacks count **every multiplayer win, ranked and unranked**. The player object's `attackWins` only counts ranked battles, so the app stores the lifetime "Conqueror" achievement and subtracts the value held when the season began. A season therefore counts from its first refresh; after a season rollover the figure is exact. Players outside the family clans can be followed by tag.
+- **Donations page**: per game season (the one that resets with the legend season), with tabs for Donations + Received and Donations alone. Totals combine every family clan, and players outside them can be followed by tag.
 
 - **Live attacks page** (season → Live attacks): round-by-round grid per clan showing stars, attacks still open in a running war, and missed attacks.
 - Everything can be edited by hand. Imports from Google Sheet links (ClashPerk exports, bonus history, player links) are there as a fallback.
@@ -59,7 +57,7 @@ COC_API_TOKEN=your-token
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4             |
 | `GOOGLE_PRIVATE_KEY`           | see step 4             |
 
-4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run saves donations, reads every family-clan member and tracked player for season stats, and syncs CWL.
+4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run saves donations for every family-clan member and tracked player, then syncs CWL.
 
 ## 4. Google Sheet export (optional)
 

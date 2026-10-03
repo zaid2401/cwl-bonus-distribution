@@ -5,10 +5,9 @@ import type { StatRow } from "@/lib/stats";
 import { setTracked } from "@/lib/actions";
 import { useAction } from "./ActionButton";
 
-export type StatsView = "both" | "donations" | "attacks";
+export type StatsView = "both" | "donations";
 
-type SortKey =
-  "donated" | "received" | "net" | "ratio" | "attacks" | "attackWins" | "defenseWins" | "trophies" | "name";
+type SortKey = "donated" | "received" | "net" | "ratio" | "name";
 
 function num(value: number) {
   return value.toLocaleString();
@@ -20,8 +19,6 @@ function compare(a: StatRow, b: StatRow, sort: SortKey) {
       return a.name.localeCompare(b.name);
     case "ratio":
       return (b.ratio ?? Infinity) - (a.ratio ?? Infinity);
-    case "trophies":
-      return (b.trophies ?? 0) - (a.trophies ?? 0);
     default:
       return b[sort] - a[sort];
   }
@@ -49,7 +46,7 @@ export function StatsTable({
 }) {
   const [q, setQ] = useState("");
   const [clan, setClan] = useState("");
-  const [sort, setSort] = useState<SortKey>(view === "attacks" ? "attacks" : "donated");
+  const [sort, setSort] = useState<SortKey>("donated");
   const { pending, exec } = useAction();
 
   const visible = useMemo(() => {
@@ -64,9 +61,7 @@ export function StatsTable({
     </th>
   );
 
-  const showDon = view !== "attacks";
   const showRec = view === "both";
-  const showAtk = view !== "donations";
 
   return (
     <div className="space-y-3">
@@ -96,14 +91,10 @@ export function StatsTable({
               <th className="th w-10">#</th>
               <Header k="name" label="Player" right={false} />
               <th className="th">Clan</th>
-              {showDon && <Header k="donated" label="Donated" />}
+              <Header k="donated" label="Donated" />
               {showRec && <Header k="received" label="Received" />}
               {showRec && <Header k="net" label="Net" />}
               {showRec && <Header k="ratio" label="Ratio" />}
-              {showAtk && <Header k="attacks" label="Attacks" />}
-              {view === "attacks" && <Header k="attackWins" label="Ranked only" />}
-              {view === "attacks" && <Header k="defenseWins" label="Defense wins" />}
-              {view === "attacks" && <Header k="trophies" label="Trophies" />}
               <th className="th">Discord</th>
               <th className="th"></th>
             </tr>
@@ -128,9 +119,7 @@ export function StatsTable({
                     <span className="chip ml-1 bg-panel2 text-muted">outside</span>
                   )}
                 </td>
-                {showDon && (
-                  <td className="td text-right font-medium tabular-nums text-good">{num(r.donated)}</td>
-                )}
+                <td className="td text-right font-medium tabular-nums text-good">{num(r.donated)}</td>
                 {showRec && <td className="td text-right tabular-nums text-muted">{num(r.received)}</td>}
                 {showRec && (
                   <td className={`td text-right tabular-nums ${r.net >= 0 ? "text-good" : "text-bad"}`}>
@@ -140,30 +129,6 @@ export function StatsTable({
                 )}
                 {showRec && (
                   <td className="td text-right tabular-nums">{r.ratio == null ? "—" : r.ratio.toFixed(2)}</td>
-                )}
-                {showAtk && (
-                  <td
-                    className="td text-right font-medium tabular-nums"
-                    title={
-                      r.attacksComplete
-                        ? "Ranked and unranked multiplayer wins"
-                        : "Counted from the first refresh of this season"
-                    }
-                  >
-                    {num(r.attacks)}
-                    {!r.attacksComplete && <span className="text-muted">*</span>}
-                  </td>
-                )}
-                {view === "attacks" && (
-                  <td className="td text-right tabular-nums text-muted">{num(r.attackWins)}</td>
-                )}
-                {view === "attacks" && (
-                  <td className="td text-right tabular-nums text-muted">{num(r.defenseWins)}</td>
-                )}
-                {view === "attacks" && (
-                  <td className="td text-right tabular-nums text-muted">
-                    {r.trophies == null ? "—" : num(r.trophies)}
-                  </td>
                 )}
                 <td className="td text-xs">
                   {r.discordUsername ?? <span className="text-muted">—</span>}
@@ -185,7 +150,7 @@ export function StatsTable({
             ))}
             {visible.length === 0 && (
               <tr>
-                <td className="td text-muted" colSpan={11}>
+                <td className="td text-muted" colSpan={9}>
                   No data for this season yet. Click “Refresh from game”, or wait for the daily job.
                 </td>
               </tr>
@@ -193,11 +158,6 @@ export function StatsTable({
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-muted">
-        <b>Attacks</b> counts every multiplayer win, ranked and unranked, from the lifetime “Conqueror”
-        counter. <b>Ranked only</b> is the game&apos;s own attack-wins number, which ignores unranked battles.
-        A season only counts from its first refresh, so partial seasons are marked with *.
-      </p>
     </div>
   );
 }

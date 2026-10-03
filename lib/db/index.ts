@@ -15,8 +15,9 @@ async function create(): Promise<DB> {
     const { default: postgres } = await import("postgres");
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
-    // Supabase's transaction pooler can't do prepared statements.
-    const client = postgres(url, { prepare: false, max: 5 });
+    // Supabase's transaction pooler can't do prepared statements. The migrator re-runs its
+    // CREATE IF NOT EXISTS every time, and those notices read like errors in a terminal.
+    const client = postgres(url, { prepare: false, max: 5, onnotice: () => {} });
     const db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: MIGRATIONS });
     return db as unknown as DB;

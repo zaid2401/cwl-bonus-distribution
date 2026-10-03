@@ -9,8 +9,9 @@ name: Sync PN
 on:
   workflow_dispatch:
   schedule:
-    # Just after the app's own 04:30 UTC sync, so the rosters are already fresh.
-    - cron: "45 4 * * *"
+    # The 5th of the month: CWL is underway and the rosters have settled. 04:45 UTC, just
+    # after the app's own sync, so the boards are already fresh when this runs.
+    - cron: "45 4 5 * *"
 
 concurrency:
   group: sync-pn

@@ -1,4 +1,8 @@
-# JPA CWL Bonus — project notes
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## JPA CWL Bonus
 
 Private tool for picking CWL bonus recipients across the JPA alliance. One admin user (Zaid), hosted
 on Vercel with a Supabase database. Everything here is CWL: if a feature is not about choosing or
@@ -59,14 +63,27 @@ against that member's history.
 - The clan members endpoint has no per-player detail worth using here, so donations are read one
   player at a time. That is also what covers tracked players outside the family clans.
 
-## Working on it
+## Commands
 
 ```bash
-npm run dev            # http://localhost:3000, no env needed
-npm test               # rules tests
-npm run mock-coc       # fake game API on :4010
-npm run db:generate    # after editing lib/db/schema.ts
+npm run dev                  # http://localhost:3000, runs with no env set
+npm run build                # production build, also the only full type check of app routes
+npx tsc --noEmit             # type check on its own
+npx prettier --write .       # formatting (no ESLint in this project)
+
+npm test                     # all rule tests
+npx tsx --test tests/logic.test.ts                          # one file
+npx tsx --test --test-name-pattern "star steal" tests/*.ts  # one test
+
+npm run mock-coc             # fake Clash of Clans API on :4010
+npm run db:generate          # new migration after editing lib/db/schema.ts
+npm run db:migrate           # apply migrations to whatever DATABASE_URL points at
 ```
+
+Route types (`PageProps`, `RouteContext`) come from `npx next typegen`; run it after adding a page
+or a route handler, or `tsc` will fail on names it has never seen.
+
+## Local database
 
 With no `DATABASE_URL`, the app runs Postgres in-process out of `./.data`. **Only one process may
 open that directory at a time** — a dev server plus a script will corrupt it. Point `PGLITE_DIR`
@@ -88,3 +105,6 @@ memory note on writing code that reads as human-written.
 
 Multiplayer attack tracking, the Latecomers clan type, and clan-level donation snapshots were all
 removed. Don't bring them back without asking.
+
+Setup and deployment steps (Supabase, Vercel, the API key, the Google service account) live in
+`README.md`.

@@ -47,16 +47,27 @@ COC_API_TOKEN=your-token
 2. At https://vercel.com, click **Add New → Project** and import the repo.
 3. Add these environment variables:
 
-| Name                           | Value                  |
-| ------------------------------ | ---------------------- |
-| `ADMIN_PASSWORD`               | your login password    |
-| `COC_API_TOKEN`                | CoC API token          |
-| `DATABASE_URL`                 | Supabase pooler URI    |
-| `CRON_SECRET`                  | any long random string |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4             |
-| `GOOGLE_PRIVATE_KEY`           | see step 4             |
+| Name                           | Value                                             |
+| ------------------------------ | ------------------------------------------------- |
+| `ADMIN_PASSWORD`               | your login password                               |
+| `BONUS_PASSWORD`               | the bonus leader's password (optional, see below) |
+| `COC_API_TOKEN`                | CoC API token                                     |
+| `DATABASE_URL`                 | Supabase pooler URI                               |
+| `CRON_SECRET`                  | any long random string                            |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4                                        |
+| `GOOGLE_PRIVATE_KEY`           | see step 4                                        |
 
 4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run syncs CWL.
+
+## A second login for the bonus leader
+
+Set `BONUS_PASSWORD` to anything you like and give it to the leader who hands out bonuses. Signing in
+with it opens the current season only, read-only, with one exception: the **Bonus** checkbox. They
+cannot touch clans, players, imports, settings, attack or donation numbers, Discord links, PN, Alt,
+Left JPA, remarks, transfers, sync, export, finalize or any other season.
+
+It is the same database, so their picks show up on your side the moment they tick a box. Changing
+`BONUS_PASSWORD` signs them out; leaving it unset means the second login does not work at all.
 
 ## 4. Google Sheet export (optional)
 

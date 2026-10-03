@@ -56,6 +56,7 @@ function searchText(r: BoardRow) {
 }
 
 export function BoardTable(props: {
+  canEdit: boolean;
   seasonId: string;
   clanTag: string;
   finalized: boolean;
@@ -65,7 +66,7 @@ export function BoardTable(props: {
   prevSeasons: { id: string; label: string }[];
   rows: BoardRow[];
 }) {
-  const { seasonId, clanTag, finalized, rows } = props;
+  const { canEdit, seasonId, clanTag, finalized, rows } = props;
   const { pending, result, exec } = useAction();
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<string | null>(null);
@@ -137,6 +138,11 @@ export function BoardTable(props: {
           onChange={(e) => setQ(e.target.value)}
         />
         <div className="ml-auto flex items-center gap-3">
+          {!canEdit && (
+            <span className="text-xs text-muted">
+              Read-only — the Bonus box is the only thing you can change.
+            </span>
+          )}
           {pending && <span className="text-xs text-muted">Saving…</span>}
           <Result result={result && !result.ok ? result : null} />
         </div>
@@ -199,6 +205,7 @@ export function BoardTable(props: {
                   </td>
                   <td className="td text-right">
                     <NumCell
+                      readOnly={!canEdit}
                       value={r.attacks}
                       overridden={r.attacksOverride != null}
                       good={r.attacks >= 7}
@@ -208,6 +215,7 @@ export function BoardTable(props: {
                   </td>
                   <td className="td text-right">
                     <NumCell
+                      readOnly={!canEdit}
                       value={r.donated}
                       overridden={r.donationsOverride != null}
                       format
@@ -216,28 +224,25 @@ export function BoardTable(props: {
                   </td>
                   <td className="td text-right text-muted">{r.received == null ? "—" : num(r.received)}</td>
                   <td className="td">
-                    <button
-                      className="text-left hover:text-accent"
-                      onClick={() => setEditing(editing === r.tag ? null : r.tag)}
-                    >
-                      {r.discordUsername || r.discordId ? (
-                        <>
-                          <div>{r.discordUsername ?? "—"}</div>
-                          <div className="text-xs text-muted">{r.discordId ?? "no ID"}</div>
-                        </>
-                      ) : (
-                        <span className="chip bg-bad/15 text-bad">link…</span>
-                      )}
-                    </button>
+                    <DiscordCell
+                      row={r}
+                      canEdit={canEdit}
+                      onOpen={() => setEditing(editing === r.tag ? null : r.tag)}
+                    />
                   </td>
                   <td className="td">
-                    <PnCell value={r.pn} onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))} />
+                    <PnCell
+                      value={r.pn}
+                      readOnly={!canEdit}
+                      onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))}
+                    />
                   </td>
                   <td className="td">
                     <input
                       type="checkbox"
                       className="size-4"
                       checked={r.isAltAccount}
+                      disabled={!canEdit}
                       onChange={(e) => exec(() => savePlayer({ tag: r.tag, isAltAccount: e.target.checked }))}
                     />
                   </td>
@@ -246,6 +251,7 @@ export function BoardTable(props: {
                       type="checkbox"
                       className="size-4"
                       checked={r.leftJpa}
+                      disabled={!canEdit}
                       onChange={(e) => part(r.tag, { leftJpa: e.target.checked })}
                     />
                   </td>
@@ -314,7 +320,7 @@ export function BoardTable(props: {
                       <select
                         className="input py-1 text-xs"
                         value={r.transferToTag ?? ""}
-                        disabled={finalized}
+                        disabled={finalized || !canEdit}
                         onChange={(e) => part(r.tag, { transferToTag: e.target.value || null })}
                       >
                         <option value="">— main —</option>
@@ -329,7 +335,11 @@ export function BoardTable(props: {
                     )}
                   </td>
                   <td className="td">
-                    <TextCell value={r.remark ?? ""} onSave={(v) => part(r.tag, { remark: v || null })} />
+                    <TextCell
+                      value={r.remark ?? ""}
+                      readOnly={!canEdit}
+                      onSave={(v) => part(r.tag, { remark: v || null })}
+                    />
                   </td>
                 </tr>
                 {editing === r.tag && (
@@ -345,24 +355,34 @@ export function BoardTable(props: {
         </table>
       </div>
 
-      <AddPlayer seasonId={seasonId} clanTag={clanTag} />
+      {canEdit && <AddPlayer seasonId={seasonId} clanTag={clanTag} />}
     </div>
   );
 }
 
 function BonusCount({
+  canEdit,
   seasonId,
   clanTag,
   bonusOverride,
   autoBonuses,
+  bonuses,
 }: {
+  canEdit: boolean;
   seasonId: string;
   clanTag: string;
   bonusOverride: number | null;
   autoBonuses: number;
+  bonuses: number;
 }) {
   const { exec } = useAction();
   const [val, setVal] = useState(bonusOverride?.toString() ?? "");
+  if (!canEdit)
+    return (
+      <div className="text-sm text-muted">
+        Bonus count <b className="text-text">{bonuses}</b>
+      </div>
+    );
   return (
     <div className="flex items-center gap-2 text-sm text-muted">
       Bonus count
@@ -389,6 +409,7 @@ function NumCell({
   good,
   title,
   format,
+  readOnly,
 }: {
   value: number | null;
   overridden: boolean;
@@ -396,9 +417,20 @@ function NumCell({
   good?: boolean;
   title?: string;
   format?: boolean;
+  readOnly?: boolean;
 }) {
   const [edit, setEdit] = useState(false);
   const [val, setVal] = useState("");
+  const shown = value == null ? "—" : format ? num(value) : value;
+  if (readOnly)
+    return (
+      <span
+        title={title}
+        className={`px-1 tabular-nums ${good === undefined ? "" : good ? "text-good" : "text-bad"}`}
+      >
+        {shown}
+      </span>
+    );
   if (edit)
     return (
       <input
@@ -423,14 +455,26 @@ function NumCell({
         setEdit(true);
       }}
     >
-      {value == null ? "—" : format ? num(value) : value}
+      {shown}
       {overridden && <sup className="text-accent">✎</sup>}
     </button>
   );
 }
 
-function PnCell({ value, onSave }: { value: number | null; onSave: (v: number | null) => void }) {
+function PnCell({
+  value,
+  onSave,
+  readOnly,
+}: {
+  value: number | null;
+  onSave: (v: number | null) => void;
+  readOnly?: boolean;
+}) {
   const [val, setVal] = useState(value?.toString() ?? "");
+  if (readOnly)
+    return (
+      <span className={`text-sm ${value != null && value >= 2 ? "text-muted" : ""}`}>{value ?? "—"}</span>
+    );
   return (
     <input
       className={`input w-12 py-0.5 text-center ${value != null && value >= 2 ? "text-muted" : ""}`}
@@ -444,8 +488,17 @@ function PnCell({ value, onSave }: { value: number | null; onSave: (v: number | 
   );
 }
 
-function TextCell({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+function TextCell({
+  value,
+  onSave,
+  readOnly,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  readOnly?: boolean;
+}) {
   const [val, setVal] = useState(value);
+  if (readOnly) return <span className="text-xs">{value || <span className="text-muted">—</span>}</span>;
   return (
     <input
       className="input w-36 py-0.5 text-xs"
@@ -453,6 +506,24 @@ function TextCell({ value, onSave }: { value: string; onSave: (v: string) => voi
       onChange={(e) => setVal(e.target.value)}
       onBlur={() => val !== value && onSave(val.trim())}
     />
+  );
+}
+
+function DiscordCell({ row, canEdit, onOpen }: { row: BoardRow; canEdit: boolean; onOpen: () => void }) {
+  const linked = row.discordUsername || row.discordId;
+  const body = linked ? (
+    <>
+      <div>{row.discordUsername ?? "—"}</div>
+      <div className="text-xs text-muted">{row.discordId ?? "no ID"}</div>
+    </>
+  ) : (
+    <span className="chip bg-bad/15 text-bad">{canEdit ? "link…" : "not linked"}</span>
+  );
+  if (!canEdit) return <div>{body}</div>;
+  return (
+    <button className="text-left hover:text-accent" onClick={onOpen}>
+      {body}
+    </button>
   );
 }
 

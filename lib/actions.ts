@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "./db";
-import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
+import { SESSION_COOKIE, passwordRole, sessionRole, sessionToken, type Role } from "./auth";
 import { coc, enc, type ApiClan } from "./coc";
 import { syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
@@ -23,14 +23,18 @@ import { normTag, seasonLabel, prevMonth } from "./util";
 
 export type ActionResult = { ok: boolean; message: string; url?: string };
 
-async function guard() {
+// `need` is the lowest role allowed to run the action. Admin can do everything; the bonus
+// leader can only reach the few actions that say so, whatever the page happens to render.
+async function guard(need: Role) {
   const jar = await cookies();
-  if (!(await isValidSession(jar.get(SESSION_COOKIE)?.value))) throw new Error("Not logged in");
+  const role = await sessionRole(jar.get(SESSION_COOKIE)?.value);
+  if (!role) throw new Error("Not logged in");
+  if (role !== "admin" && role !== need) throw new Error("This account can only tick and untick bonuses.");
 }
 
-async function run(fn: () => Promise<string | ActionResult>): Promise<ActionResult> {
+async function run(fn: () => Promise<string | ActionResult>, need: Role = "admin"): Promise<ActionResult> {
   try {
-    await guard();
+    await guard(need);
     const r = await fn();
     revalidatePath("/", "layout");
     return typeof r === "string" ? { ok: true, message: r } : r;
@@ -42,9 +46,9 @@ async function run(fn: () => Promise<string | ActionResult>): Promise<ActionResu
 // --- auth
 
 export async function login(_: unknown, form: FormData): Promise<ActionResult> {
-  const pw = process.env.ADMIN_PASSWORD;
-  if (!pw) return { ok: false, message: "ADMIN_PASSWORD is not set on the server." };
-  if (form.get("password") !== pw) return { ok: false, message: "Wrong password." };
+  if (!process.env.ADMIN_PASSWORD) return { ok: false, message: "ADMIN_PASSWORD is not set on the server." };
+  const pw = String(form.get("password") ?? "");
+  if (!passwordRole(pw)) return { ok: false, message: "Wrong password." };
   (await cookies()).set(SESSION_COOKIE, await sessionToken(pw), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -176,20 +180,26 @@ export async function updateParticipant(
   playerTag: string,
   patch: PartPatch,
 ) {
-  return run(async () => {
-    const db = await getDb();
-    const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
-    if (season?.status === "finalized" && ("selected" in patch || "transferToTag" in patch))
-      throw new Error("Season is finalized. Reopen it to change bonuses.");
-    await db
-      .insert(s.participants)
-      .values({ seasonId, clanTag, playerTag, ...patch })
-      .onConflictDoUpdate({
-        target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag],
-        set: patch,
-      });
-    return "Saved.";
-  });
+  // Ticking the bonus box is the bonus leader's whole job. Anything else in the patch,
+  // even alongside `selected`, is an admin edit.
+  const bonusOnly = Object.keys(patch).length === 1 && "selected" in patch;
+  return run(
+    async () => {
+      const db = await getDb();
+      const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
+      if (season?.status === "finalized" && ("selected" in patch || "transferToTag" in patch))
+        throw new Error("Season is finalized. Reopen it to change bonuses.");
+      await db
+        .insert(s.participants)
+        .values({ seasonId, clanTag, playerTag, ...patch })
+        .onConflictDoUpdate({
+          target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag],
+          set: patch,
+        });
+      return "Saved.";
+    },
+    bonusOnly ? "bonus" : "admin",
+  );
 }
 
 export async function addPlayerToBoard(seasonId: string, clanTag: string, rawTag: string, name: string) {
@@ -400,7 +410,7 @@ export async function deleteSeason(seasonId: string) {
 
 export async function previewSheet(source: string) {
   try {
-    await guard();
+    await guard("admin");
     const rows = await loadRows(source);
     return {
       ok: true as const,

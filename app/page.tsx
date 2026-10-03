@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { count } from "drizzle-orm";
 import { getDb, schema as s } from "@/lib/db";
 import { listSeasons } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
 import { syncAll } from "@/lib/actions";
 import { NewSeasonForm } from "@/components/NewSeasonForm";
+import { currentRole } from "@/lib/session";
 import { gameSeasonAt } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +14,14 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const db = await getDb();
   const seasons = await listSeasons();
+
+  // The bonus leader has no use for the season list: send them straight to the CWL on now.
+  if ((await currentRole()) === "bonus") {
+    if (!seasons[0])
+      return <div className="card p-4 text-muted">No CWL season yet. Check back once one is synced.</div>;
+    redirect(`/seasons/${encodeURIComponent(seasons[0].id)}`);
+  }
+
   const [{ n: cwlClans }] = await db.select({ n: count() }).from(s.clans);
   const counts = await db
     .select({ seasonId: s.cwlClanSeasons.seasonId, n: count() })

@@ -5,6 +5,7 @@ import { attacksBoard, attacksOverview } from "@/lib/live";
 import { AttacksGrid } from "@/components/AttacksGrid";
 import { LiveControls } from "@/components/LiveControls";
 import { syncAll } from "@/lib/actions";
+import { seasonGate } from "@/lib/session";
 import { tagSlug } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
   const { id: raw } = await props.params;
   const sp = await props.searchParams;
   const id = decodeURIComponent(raw);
+  const admin = await seasonGate(id);
   const season = await getSeason(id);
   if (!season) notFound();
 
@@ -45,13 +47,15 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
             <span className="text-bad">{totals.missed} missed</span>
           </p>
         </div>
-        <LiveControls
-          action={syncAll}
-          label="Sync all clans"
-          pendingText="Syncing…"
-          lastUpdated={board?.lastFetched ? new Date(board.lastFetched).toLocaleString() : null}
-          intervalSeconds={300}
-        />
+        {admin && (
+          <LiveControls
+            action={syncAll}
+            label="Sync all clans"
+            pendingText="Syncing…"
+            lastUpdated={board?.lastFetched ? new Date(board.lastFetched).toLocaleString() : null}
+            intervalSeconds={300}
+          />
+        )}
       </div>
 
       <div className="card overflow-x-auto">

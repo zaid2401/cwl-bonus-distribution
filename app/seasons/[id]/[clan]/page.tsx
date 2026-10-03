@@ -4,6 +4,7 @@ import { clanBoard, getSeason } from "@/lib/view";
 import { BoardTable } from "@/components/BoardTable";
 import { ActionButton } from "@/components/ActionButton";
 import { syncClan } from "@/lib/actions";
+import { seasonGate } from "@/lib/session";
 import { slugTag } from "@/lib/util";
 import { B2B_THRESHOLD, B2B_WINDOW } from "@/lib/logic";
 
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[clan]">) {
   const { id: rawId, clan } = await props.params;
   const id = decodeURIComponent(rawId);
+  const admin = await seasonGate(id);
   const season = await getSeason(id);
   if (!season) notFound();
   const board = await clanBoard(id, slugTag(clan));
@@ -42,7 +44,7 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
           <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${clan}`}>
             Attack details
           </Link>
-          {!finalized && (
+          {admin && !finalized && (
             <ActionButton action={syncClan.bind(null, board.clanTag)} pendingText="Syncing…">
               Sync this clan
             </ActionButton>
@@ -51,6 +53,7 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
       </div>
 
       <BoardTable
+        canEdit={admin}
         seasonId={id}
         clanTag={board.clanTag}
         finalized={finalized}

@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## JPA CWL Bonus
 
-Private tool for picking CWL bonus recipients across the JPA alliance. One admin user (Zaid), hosted
-on Vercel with a Supabase database. Everything here is CWL: if a feature is not about choosing or
-recording CWL bonuses, it does not belong in this app.
+Private tool for picking CWL bonus recipients across the JPA alliance, hosted on Vercel with a
+Supabase database. Everything here is CWL: if a feature is not about choosing or recording CWL
+bonuses, it does not belong in this app.
 
 ## The rules it encodes
 
@@ -32,6 +32,25 @@ against that member's history.
 
 `lib/logic.ts` holds every constant and the pure functions, and is the only part with unit tests.
 
+## Two accounts
+
+The password decides who you are, so there are no user rows anywhere: `ADMIN_PASSWORD` is Zaid and
+`BONUS_PASSWORD` is the leader who only hands out bonuses. The session cookie is a signature of
+whichever password minted it, which is how `sessionRole()` tells them apart.
+
+The bonus account sees the current season's pages and nothing else, read-only except the Bonus
+checkbox — same database, so a tick shows up for Zaid immediately. Three layers hold that:
+
+- `proxy.ts` sends it back to the board for any path outside `/` and `/seasons/`.
+- `seasonGate()` in `lib/session.ts` sends it back for any season but the newest, and tells the page
+  whether to render admin controls. Pages pass that down as `canEdit`.
+- `run()` in `lib/actions.ts` takes the role an action needs, defaulting to admin.
+  `updateParticipant` asks for "bonus" only when the patch is exactly `{ selected }` — anything else
+  in it, even alongside `selected`, is an admin edit. **Hiding a control is not refusing a write**:
+  anything new that the bonus account can reach needs its own `run()` role.
+
+Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
+
 ## Shape of the code
 
 | Path                             | What lives there                                                               |
@@ -44,6 +63,8 @@ against that member's history.
 | `lib/imports.ts`                 | Google Sheet imports: history, donations, CWL exports, player links.           |
 | `lib/export.ts`, `lib/sheets.ts` | Season export in the old Combined-sheet layout.                                |
 | `lib/actions.ts`                 | Every server action. All of them go through `run()`, which checks the session. |
+| `lib/auth.ts`                    | Passwords, roles and the session cookie. Safe to import from `proxy.ts`.       |
+| `lib/session.ts`                 | What pages ask for the current role. Uses `next/headers`, so not in the proxy. |
 | `app/`, `components/`            | Next.js 16 App Router pages and client components.                             |
 
 ## Data model notes
@@ -106,7 +127,9 @@ To drive the app against the mock game API, set `COC_API_BASE=http://localhost:4
 `COC_API_TOKEN=test` in `.env.local`.
 
 Auth is off in dev when `ADMIN_PASSWORD` is empty, and `.env.development.local` wins over
-`.env.local`, so a file holding just `ADMIN_PASSWORD=` gets past the login screen. Delete it
+`.env.local`, so a file holding just `ADMIN_PASSWORD=` gets past the login screen — as admin. To try
+the bonus account instead, that file needs a real `ADMIN_PASSWORD` and a `BONUS_PASSWORD`, plus an
+empty `DATABASE_URL` and a scratch `PGLITE_DIR` so you are nowhere near production. Delete it
 afterwards.
 
 ## Migrations

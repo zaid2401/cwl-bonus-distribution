@@ -11,6 +11,7 @@ import {
   reopenSeason,
   syncClan,
 } from "@/lib/actions";
+import { seasonGate } from "@/lib/session";
 import { tagSlug } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
   const { id: raw } = await props.params;
   const id = decodeURIComponent(raw);
+  const admin = await seasonGate(id);
   const season = await getSeason(id);
   if (!season) notFound();
   const clans = await seasonOverview(id);
@@ -36,9 +38,11 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/" className="text-muted hover:text-text">
-            ← Seasons
-          </Link>
+          {admin && (
+            <Link href="/" className="text-muted hover:text-text">
+              ← Seasons
+            </Link>
+          )}
           <h1 className="mt-1 text-2xl font-bold">
             CWL {season.label}{" "}
             {finalized ? (
@@ -55,7 +59,10 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          {totals.recorded > totals.selected && !finalized && (
+          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks`}>
+            Live attacks
+          </Link>
+          {admin && totals.recorded > totals.selected && !finalized && (
             <ActionButton
               action={applyRecordedBonuses.bind(null, id)}
               confirm={`Tick the players already in bonus history for ${season.label}? One account per member.`}
@@ -64,16 +71,17 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
               Apply history to picks
             </ActionButton>
           )}
-          <ActionButton action={exportSeasonToSheet.bind(null, id)} pendingText="Exporting…">
-            Export to Google Sheet
-          </ActionButton>
-          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks`}>
-            Live attacks
-          </Link>
-          <a className="btn" href={`/api/export/${encodeURIComponent(id)}`}>
-            Download CSV
-          </a>
-          {finalized ? (
+          {admin && (
+            <>
+              <ActionButton action={exportSeasonToSheet.bind(null, id)} pendingText="Exporting…">
+                Export to Google Sheet
+              </ActionButton>
+              <a className="btn" href={`/api/export/${encodeURIComponent(id)}`}>
+                Download CSV
+              </a>
+            </>
+          )}
+          {!admin ? null : finalized ? (
             <ActionButton action={reopenSeason.bind(null, id)} confirm="Reopen this season for changes?">
               Reopen
             </ActionButton>
@@ -145,7 +153,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
                     )}
                   </td>
                   <td className="td">
-                    {!finalized && (
+                    {admin && !finalized && (
                       <ActionButton
                         action={syncClan.bind(null, c.clanTag)}
                         className="btn btn-sm"
@@ -169,24 +177,28 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
         </table>
       </div>
 
-      <SeasonSettings
-        season={{
-          id: season.id,
-          label: season.label,
-          sortKey: season.sortKey,
-          donationSeason: season.donationSeason,
-        }}
-      />
+      {admin && (
+        <>
+          <SeasonSettings
+            season={{
+              id: season.id,
+              label: season.label,
+              sortKey: season.sortKey,
+              donationSeason: season.donationSeason,
+            }}
+          />
 
-      <div className="flex justify-end">
-        <ActionButton
-          action={deleteSeason.bind(null, id)}
-          className="btn btn-danger btn-sm"
-          confirm={`Delete season ${id} and ALL its data (wars, picks, history)? This cannot be undone.`}
-        >
-          Delete season
-        </ActionButton>
-      </div>
+          <div className="flex justify-end">
+            <ActionButton
+              action={deleteSeason.bind(null, id)}
+              className="btn btn-danger btn-sm"
+              confirm={`Delete season ${id} and ALL its data (wars, picks, history)? This cannot be undone.`}
+            >
+              Delete season
+            </ActionButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }

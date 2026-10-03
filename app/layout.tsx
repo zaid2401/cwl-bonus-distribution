@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import "./globals.css";
-import { SESSION_COOKIE, isValidSession, authDisabled } from "@/lib/auth";
+import { authDisabled } from "@/lib/auth";
+import { currentRole } from "@/lib/session";
 import { logout } from "@/lib/actions";
 
 export const metadata: Metadata = { title: "JPA CWL Bonus", robots: { index: false } };
@@ -16,7 +16,8 @@ const nav = [
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const loggedIn = await isValidSession((await cookies()).get(SESSION_COOKIE)?.value);
+  const role = await currentRole();
+  const loggedIn = role !== null;
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
@@ -27,7 +28,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <span className="text-accent">JPA</span> CWL Bonus
               </Link>
               <nav className="flex flex-wrap gap-1">
-                {nav.map((n) => (
+                {role === "bonus" && (
+                  <span className="chip bg-accent/15 text-accent" title="You can tick bonuses, nothing else">
+                    bonus picks only
+                  </span>
+                )}
+                {(role === "admin" ? nav : []).map((n) => (
                   <Link
                     key={n.href}
                     href={n.href}

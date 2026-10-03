@@ -58,6 +58,7 @@ Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
 | `lib/util.ts`                    | Tag and season helpers: `normTag()`, `cwlSeasonId()`, `currentCwlSeason()`.    |
 | `lib/sync.ts`                    | Clash of Clans API pulls: CWL wars and rosters.                                |
 | `lib/jpa.ts`                     | clashwithjpa.com API: CWL seasons and applications. Read-only.                 |
+| `lib/pn.ts`                      | Preference numbers onto a season's boards. Only `npm run sync-pn` calls it.    |
 | `lib/view.ts`                    | The bonus board and season overview.                                           |
 | `lib/live.ts`                    | Round-by-round attack grid.                                                    |
 | `lib/imports.ts`                 | Google Sheet imports: history, donations, CWL exports, player links.           |
@@ -105,10 +106,11 @@ pairs them on month and year, and when a month holds two CWLs it pairs them olde
 
 **Cloudflare fronts that API and challenges any call from a datacentre** — a "Just a moment…"
 page, which a server can never answer. Vercel and GitHub Actions were both tried and both
-blocked, and the browser cannot do it either: the API allows no cross-origin calls. A laptop
-goes straight through, so `npm run sync-pn [season]` does the job and the button explains itself
-when it is turned away. `lib/pn.ts` holds the logic both of them call, and `JPA_API_BASE` is
-there for the day someone finds the origin hostname behind Cloudflare.
+blocked, and the browser cannot do it either: the API allows no cross-origin calls. Only a home
+machine gets through, so this lives in `npm run sync-pn [season]` and **the app has no button
+for it** — don't add one back without checking that the block is gone. `JPA_API_BASE` is there
+for the day someone finds the origin hostname behind Cloudflare, which would make a button
+possible again.
 
 **Sync PN overwrites whatever is on the board**, hand edits included. That is the point: the
 website is the source of truth for PN.

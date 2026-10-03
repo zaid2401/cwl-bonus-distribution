@@ -51,8 +51,8 @@ async function boardPlayers(db: DB, seasonId: string) {
 }
 
 // PN is decided when a member applies for CWL on clashwithjpa.com, so it is read from there
-// rather than typed in twice. Shared by the Sync PN button and `npm run sync-pn`, because
-// Cloudflare turns away the serverless call and lets a laptop through.
+// rather than typed in twice. Only `npm run sync-pn` calls this: Cloudflare challenges the
+// call from any datacentre, so the app cannot make it and there is no button for it.
 export async function applyPreferenceNumbers(db: DB, seasonId: string): Promise<string> {
   const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
   if (!season) throw new Error(`Season ${seasonId} not found.`);

@@ -2,7 +2,6 @@ node_modules
 .next
 .data
 *.tsbuildinfo
-sync-pn.log
 next-env.d.ts
 .vercel
 

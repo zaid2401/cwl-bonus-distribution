@@ -62,31 +62,21 @@ COC_API_TOKEN=your-token
 
 ## Preference numbers
 
-Preference numbers come from each member's CWL application on clashwithjpa.com. A player with no
-application keeps whatever PN the Players page holds for them, and re-syncing overwrites hand edits —
-the website is where PN is decided.
-
-Cloudflare sits in front of that API and answers with a "Just a moment…" challenge whenever the call
-comes from a datacentre — Vercel and GitHub Actions are both turned away, and the browser cannot do
-it either because the API allows no cross-origin calls. So the **Sync PN** button only works if that
-ever changes, and until then it runs from your own machine:
+Preference numbers come from each member's CWL application on clashwithjpa.com. Run this after the
+CWL rosters have synced, as often as you like — it only writes what changed:
 
 ```bash
 npm run sync-pn            # the newest season
 npm run sync-pn 2026-10    # a particular one
 ```
 
-It reads `DATABASE_URL` and `JPA_API_KEY` from `.env.local`, so it writes straight to production.
+It reads `DATABASE_URL` and `JPA_API_KEY` from `.env.local`, so it writes straight to production. A
+player with no application keeps whatever PN the Players page holds for them, and re-running
+overwrites hand edits — the website is where PN is decided.
 
-To have Windows do it on the 5th of each month, import the task once (it catches up if the PC was
-off, and logs to `sync-pn.log`):
-
-```bash
-schtasks /create /tn "JPA CWL Sync PN" /xml scripts\sync-pn.task.xml
-```
-
-`scripts\sync-pn.cmd` is the same thing by double-click. The real fix, if a clanmate ever says where
-that API is deployed, is to point `JPA_API_BASE` at the origin host so the button works again.
+There is no button for this in the app: Cloudflare sits in front of that API and challenges any call
+from a datacentre, so Vercel and GitHub Actions are both turned away and only a home machine gets
+through.
 
 ## A second login for the bonus leader
 

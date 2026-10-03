@@ -19,7 +19,6 @@ import {
 import { loadRows, writeSheetTab } from "./sheets";
 import { buildSeasonExport } from "./export";
 import { memberKey } from "./logic";
-import { applyPreferenceNumbers } from "./pn";
 import { normTag, seasonLabel, prevMonth } from "./util";
 
 export type ActionResult = { ok: boolean; message: string; url?: string };
@@ -221,21 +220,6 @@ export async function setBonusOverride(seasonId: string, clanTag: string, value:
       .set({ bonusOverride: value })
       .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.clanTag, clanTag)));
     return "Saved.";
-  });
-}
-
-// The Sync PN button only works when the edge in front of clashwithjpa.com lets a
-// serverless call through. When it does not, `npm run sync-pn` does the same job from a
-// machine it does trust.
-export async function syncPreferenceNumbers(seasonId: string) {
-  return run(async () => {
-    try {
-      return await applyPreferenceNumbers(await getDb(), seasonId);
-    } catch (e) {
-      const m = (e as Error).message;
-      if (!m.includes("the key was never checked")) throw e;
-      throw new Error(`${m} Until then, run \`npm run sync-pn ${seasonId}\` on your own machine.`);
-    }
   });
 }
 

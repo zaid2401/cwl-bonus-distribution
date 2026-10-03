@@ -16,7 +16,7 @@ export const players = pgTable(
     discordUsername: text("discord_username"),
     // 1 = main account, 2 and up are alts.
     pn: integer("pn"),
-    isExternal: boolean("is_external").notNull().default(false),
+    isAltAccount: boolean("is_alt_account").notNull().default(false),
     notes: text("notes"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

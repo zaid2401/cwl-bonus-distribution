@@ -28,13 +28,13 @@ test("bonus count = 6 + wins unless overridden", () => {
   assert.equal(bonusCount(5, 4), 4);
 });
 
-test("eligibility: 7 attacks, main, not external, still in the alliance", () => {
-  const base = { attacks: 7, pn: 1, isExternal: false, leftJpa: false };
+test("eligibility: 7 attacks, main, not an alt, still in the alliance", () => {
+  const base = { attacks: 7, pn: 1, isAltAccount: false, leftJpa: false };
   assert.equal(isEligible({ ...base, pn: null }), true);
   assert.equal(isEligible(base), true);
   assert.equal(isEligible({ ...base, attacks: 6 }), false);
   assert.equal(isEligible({ ...base, pn: 2 }), false);
-  assert.equal(isEligible({ ...base, isExternal: true }), false);
+  assert.equal(isEligible({ ...base, isAltAccount: true }), false);
   assert.equal(isEligible({ ...base, leftJpa: true }), false);
 });
 

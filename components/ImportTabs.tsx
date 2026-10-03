@@ -322,7 +322,7 @@ function PlayersImport() {
   return (
     <div className="card space-y-3 p-4">
       <p className="text-muted">
-        Needs a <b>Tag</b> column. Optional: Name, ID (Discord ID), Username, PN (e.g. “PN2” or “2”), External
+        Needs a <b>Tag</b> column. Optional: Name, ID (Discord ID), Username, PN (e.g. “PN2” or “2”), Alt
         (TRUE/FALSE). Non-empty cells overwrite existing values.
       </p>
       <Source value={src} onChange={setSrc} />

@@ -47,8 +47,8 @@ function searchText(r: BoardRow) {
     r.recorded && "in history",
     r.backToBack && `b2b ${r.recentBonuses}`,
     r.starSteal.length > 0 && "star steal",
-    r.isAlt && "alt",
-    r.isExternal && "external",
+    r.isAlt && "pn2+",
+    r.isAltAccount && "alt",
     r.leftJpa && "left jpa",
     r.selectedElsewhere && `picked elsewhere ${r.selectedElsewhere}`,
   ];
@@ -154,7 +154,7 @@ export function BoardTable(props: {
               <th className="th text-right">Received</th>
               <th className="th">Discord</th>
               <th className="th">PN</th>
-              <th className="th">External</th>
+              <th className="th">Alt</th>
               <th className="th" title="Left the alliance — no bonus">
                 Left JPA
               </th>
@@ -237,8 +237,8 @@ export function BoardTable(props: {
                     <input
                       type="checkbox"
                       className="size-4"
-                      checked={r.isExternal}
-                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isExternal: e.target.checked }))}
+                      checked={r.isAltAccount}
+                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isAltAccount: e.target.checked }))}
                     />
                   </td>
                   <td className="td">
@@ -295,8 +295,8 @@ export function BoardTable(props: {
                           Star steal ×{r.starSteal.length}
                         </span>
                       )}
-                      {r.isAlt && <span className="chip bg-panel2 text-muted">alt</span>}
-                      {r.isExternal && <span className="chip bg-panel2 text-muted">external</span>}
+                      {r.isAlt && <span className="chip bg-panel2 text-muted">PN{r.pn}</span>}
+                      {r.isAltAccount && <span className="chip bg-panel2 text-muted">alt</span>}
                       {r.leftJpa && <span className="chip bg-bad/15 text-bad">left JPA</span>}
                       {r.attacks < 7 && <span className="chip bg-panel2 text-muted">{r.attacks}/7</span>}
                       {r.selectedElsewhere && (

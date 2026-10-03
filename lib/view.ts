@@ -123,7 +123,7 @@ export interface BoardRow {
   discordId: string | null;
   discordUsername: string | null;
   pn: number | null;
-  isExternal: boolean;
+  isAltAccount: boolean;
   leftJpa: boolean;
   isAlt: boolean;
   memberKey: string;
@@ -303,7 +303,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     const history = prevIds.map((id) => histBy.get(id)?.has(key) ?? false);
     const recent = history.filter(Boolean).length;
     const pn = pl?.pn ?? null;
-    const isExternal = pl?.isExternal ?? false;
+    const isAltAccount = pl?.isAltAccount ?? false;
     const leftJpa = part?.leftJpa ?? false;
 
     let stars = 0;
@@ -326,14 +326,14 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       discordId: pl?.discordId ?? null,
       discordUsername: pl?.discordUsername ?? null,
       pn,
-      isExternal,
+      isAltAccount,
       leftJpa,
       isAlt: isAlt(pn),
       memberKey: key,
       history,
       recentBonuses: recent,
       backToBack: recent >= B2B_THRESHOLD,
-      eligible: isEligible({ attacks: counted.attacks, pn, isExternal, leftJpa }),
+      eligible: isEligible({ attacks: counted.attacks, pn, isAltAccount, leftJpa }),
       selected: part?.selected ?? false,
       recorded: recordedKeys.has(key),
       transferToTag: part?.transferToTag ?? null,

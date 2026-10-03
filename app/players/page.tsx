@@ -35,7 +35,7 @@ export default async function PlayersPage(props: PageProps<"/players">) {
       <div>
         <h1 className="text-2xl font-bold">Players</h1>
         <p className="text-muted">
-          Discord links, priority numbers (PN1 = main, PN2+ = alt) and external flags. Players are added
+          Discord links, priority numbers (PN1 = main, PN2+ = alt) and alt flags. Players are added
           automatically by syncs and imports.
         </p>
       </div>
@@ -61,7 +61,7 @@ export default async function PlayersPage(props: PageProps<"/players">) {
           discordId: r.discordId,
           discordUsername: r.discordUsername,
           pn: r.pn,
-          isExternal: r.isExternal,
+          isAltAccount: r.isAltAccount,
           notes: r.notes,
         }))}
       />

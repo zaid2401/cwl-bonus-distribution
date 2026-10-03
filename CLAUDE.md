@@ -11,8 +11,10 @@ recording CWL bonuses, it does not belong in this app.
 ## The rules it encodes
 
 Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies when they used **7/7
-attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not an external
-account** and have not been ticked **Left JPA** on that season's board. Among those, donations from the **previous game
+attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not ticked Alt** and
+have not been ticked **Left JPA** on that season's board. `players.is_alt_account` is the Alt tick,
+which is a different thing from the PN-derived `isAlt()`: the tick is for an account that is not the
+member's own main, PN is the member's own ordering. Among those, donations from the **previous game
 season** decide the order. Nobody is auto-picked: the board sorts and flags, Zaid ticks the boxes.
 
 Flags are advisory only, never exclusions:

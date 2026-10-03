@@ -106,7 +106,7 @@ export async function savePlayer(input: {
   discordId?: string | null;
   discordUsername?: string | null;
   pn?: number | null;
-  isExternal?: boolean;
+  isAltAccount?: boolean;
   notes?: string | null;
 }) {
   return run(async () => {
@@ -119,7 +119,7 @@ export async function savePlayer(input: {
     if (input.discordId !== undefined) set.discordId = clean(input.discordId);
     if (input.discordUsername !== undefined) set.discordUsername = clean(input.discordUsername);
     if (input.pn !== undefined) set.pn = input.pn;
-    if (input.isExternal !== undefined) set.isExternal = input.isExternal;
+    if (input.isAltAccount !== undefined) set.isAltAccount = input.isAltAccount;
     if (input.notes !== undefined) set.notes = clean(input.notes);
     await db
       .insert(s.players)

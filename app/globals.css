@@ -49,6 +49,26 @@ body {
   .chip {
     @apply inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none whitespace-nowrap;
   }
+  /* A dot, a border and a tint, so flags stay apart from each other and from the text. */
+  .flag {
+    @apply inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-[11px] font-semibold
+      leading-none whitespace-nowrap;
+  }
+  .flag::before {
+    @apply size-1.5 shrink-0 rounded-full bg-current content-[''];
+  }
+  .flag-bad {
+    @apply border-bad/40 bg-bad/10 text-bad;
+  }
+  .flag-warn {
+    @apply border-warn/40 bg-warn/10 text-warn;
+  }
+  .flag-good {
+    @apply border-good/40 bg-good/10 text-good;
+  }
+  .flag-mute {
+    @apply border-line bg-panel2 text-muted;
+  }
   .th {
     @apply sticky top-0 z-10 border-b border-line bg-panel2 px-2 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap;
   }

@@ -27,9 +27,6 @@ Flags are advisory only, never exclusions:
 - **Star steal** — after a player passes 8 stars, any hit on a base numbered below their own war
   position.
 
-A bonus belongs to the member, not the account. It can be transferred to an alt and still counts
-against that member's history.
-
 `lib/logic.ts` holds every constant and the pure functions, and is the only part with unit tests.
 
 ## Two accounts
@@ -160,9 +157,11 @@ memory note on writing code that reads as human-written.
 
 ## Deliberately absent
 
-Multiplayer attack tracking, the Latecomers clan type, the alliance/CWL clan split, and every form of
-live donation tracking (the Donations page, `player_stats`, tracked players, the daily snapshot) were
-all removed. Donations arrive by import now. Don't bring any of it back without asking.
+Multiplayer attack tracking, the Latecomers clan type, the alliance/CWL clan split, bonus transfers
+to an alt, free-text remarks on a player, and every form of live donation tracking (the Donations
+page, `player_stats`, tracked players, the daily snapshot) were all removed. Donations arrive by
+import now. A bonus is recorded against the account that was ticked, under that member's key. Don't
+bring any of it back without asking.
 
 Setup and deployment steps (Supabase, Vercel, the API key, the Google service account) live in
 `README.md`.

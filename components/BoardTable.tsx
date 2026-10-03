@@ -24,7 +24,7 @@ function pickedClass(picked: number, bonuses: number) {
 type Filter = "all" | "eligible" | "selected" | "recorded";
 
 // Everything the row shows, in one lowercase string, so the box matches any column:
-// numbers with or without their commas, tags, Discord names, chips, remarks.
+// numbers with or without their commas, tags, Discord names, flags.
 function searchText(r: BoardRow) {
   const bits = [
     r.name,
@@ -40,8 +40,6 @@ function searchText(r: BoardRow) {
     r.discordUsername,
     r.discordId,
     r.pn != null && `pn${r.pn}`,
-    r.remark,
-    r.transferToTag,
     r.eligible && "eligible",
     r.selected && "picked bonus",
     r.recorded && "in history",
@@ -67,6 +65,8 @@ export function BoardTable(props: {
   rows: BoardRow[];
 }) {
   const { canEdit, seasonId, clanTag, finalized, rows } = props;
+  // The bonus leader reads the flags instead of the columns that set them.
+  const columns = canEdit ? 12 : 9;
   const { pending, result, exec } = useAction();
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<string | null>(null);
@@ -159,17 +159,19 @@ export function BoardTable(props: {
               <th className="th text-right">Donated</th>
               <th className="th text-right">Received</th>
               <th className="th">Discord</th>
-              <th className="th">PN</th>
-              <th className="th">Alt</th>
-              <th className="th" title="Left the alliance — no bonus">
-                Left JPA
-              </th>
+              {canEdit && (
+                <>
+                  <th className="th">PN</th>
+                  <th className="th">Alt</th>
+                  <th className="th" title="Left the alliance — no bonus">
+                    Left JPA
+                  </th>
+                </>
+              )}
               <th className="th" title="Oldest → newest">
                 History
               </th>
               <th className="th">Flags</th>
-              <th className="th">Transfer to</th>
-              <th className="th">Remark</th>
             </tr>
           </thead>
           <tbody>
@@ -230,31 +232,31 @@ export function BoardTable(props: {
                       onOpen={() => setEditing(editing === r.tag ? null : r.tag)}
                     />
                   </td>
-                  <td className="td">
-                    <PnCell
-                      value={r.pn}
-                      readOnly={!canEdit}
-                      onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))}
-                    />
-                  </td>
-                  <td className="td">
-                    <input
-                      type="checkbox"
-                      className="size-4"
-                      checked={r.isAltAccount}
-                      disabled={!canEdit}
-                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isAltAccount: e.target.checked }))}
-                    />
-                  </td>
-                  <td className="td">
-                    <input
-                      type="checkbox"
-                      className="size-4"
-                      checked={r.leftJpa}
-                      disabled={!canEdit}
-                      onChange={(e) => part(r.tag, { leftJpa: e.target.checked })}
-                    />
-                  </td>
+                  {canEdit && (
+                    <>
+                      <td className="td">
+                        <PnCell value={r.pn} onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))} />
+                      </td>
+                      <td className="td">
+                        <input
+                          type="checkbox"
+                          className="size-4"
+                          checked={r.isAltAccount}
+                          onChange={(e) =>
+                            exec(() => savePlayer({ tag: r.tag, isAltAccount: e.target.checked }))
+                          }
+                        />
+                      </td>
+                      <td className="td">
+                        <input
+                          type="checkbox"
+                          className="size-4"
+                          checked={r.leftJpa}
+                          onChange={(e) => part(r.tag, { leftJpa: e.target.checked })}
+                        />
+                      </td>
+                    </>
+                  )}
                   <td className="td">
                     <div className="flex gap-0.5">
                       {history.map((h, hi) => {
@@ -271,80 +273,12 @@ export function BoardTable(props: {
                     </div>
                   </td>
                   <td className="td">
-                    <div className="flex flex-wrap gap-1">
-                      {r.recorded && (
-                        <span
-                          className="chip bg-good/15 text-good"
-                          title="Already recorded in bonus history for this season"
-                        >
-                          in history
-                        </span>
-                      )}
-                      {r.backToBack && (
-                        <span
-                          className="chip bg-warn/15 text-warn"
-                          title={`${r.recentBonuses} bonuses in last ${history.length} seasons`}
-                        >
-                          B2B {r.recentBonuses}
-                        </span>
-                      )}
-                      {r.starSteal.length > 0 && (
-                        <span
-                          className="chip bg-bad/15 text-bad"
-                          title={r.starSteal
-                            .map(
-                              (f) =>
-                                `Round ${f.round}: #${f.attackerPosition} hit #${f.defenderPosition} (${f.stars}★, had ${f.starsBefore}★)`,
-                            )
-                            .join("\n")}
-                        >
-                          Star steal ×{r.starSteal.length}
-                        </span>
-                      )}
-                      {r.isAlt && <span className="chip bg-panel2 text-muted">PN{r.pn}</span>}
-                      {r.isAltAccount && <span className="chip bg-panel2 text-muted">alt</span>}
-                      {r.leftJpa && <span className="chip bg-bad/15 text-bad">left JPA</span>}
-                      {r.attacks < 7 && <span className="chip bg-panel2 text-muted">{r.attacks}/7</span>}
-                      {r.selectedElsewhere && (
-                        <span
-                          className="chip bg-bad/15 text-bad"
-                          title={`Also picked in ${r.selectedElsewhere}`}
-                        >
-                          picked elsewhere
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="td">
-                    {r.selected && r.otherAccounts.length > 0 ? (
-                      <select
-                        className="input py-1 text-xs"
-                        value={r.transferToTag ?? ""}
-                        disabled={finalized || !canEdit}
-                        onChange={(e) => part(r.tag, { transferToTag: e.target.value || null })}
-                      >
-                        <option value="">— main —</option>
-                        {r.otherAccounts.map((o) => (
-                          <option key={o.tag} value={o.tag}>
-                            {o.name} ({o.tag})
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-xs text-muted">—</span>
-                    )}
-                  </td>
-                  <td className="td">
-                    <TextCell
-                      value={r.remark ?? ""}
-                      readOnly={!canEdit}
-                      onSave={(v) => part(r.tag, { remark: v || null })}
-                    />
+                    <Flags row={r} seasons={history.length} />
                   </td>
                 </tr>
                 {editing === r.tag && (
                   <tr>
-                    <td className="td bg-panel2" colSpan={14}>
+                    <td className="td bg-panel2" colSpan={columns}>
                       <LinkEditor row={r} onClose={() => setEditing(null)} />
                     </td>
                   </tr>
@@ -461,20 +395,8 @@ function NumCell({
   );
 }
 
-function PnCell({
-  value,
-  onSave,
-  readOnly,
-}: {
-  value: number | null;
-  onSave: (v: number | null) => void;
-  readOnly?: boolean;
-}) {
+function PnCell({ value, onSave }: { value: number | null; onSave: (v: number | null) => void }) {
   const [val, setVal] = useState(value?.toString() ?? "");
-  if (readOnly)
-    return (
-      <span className={`text-sm ${value != null && value >= 2 ? "text-muted" : ""}`}>{value ?? "—"}</span>
-    );
   return (
     <input
       className={`input w-12 py-0.5 text-center ${value != null && value >= 2 ? "text-muted" : ""}`}
@@ -488,24 +410,63 @@ function PnCell({
   );
 }
 
-function TextCell({
-  value,
-  onSave,
-  readOnly,
-}: {
-  value: string;
-  onSave: (v: string) => void;
-  readOnly?: boolean;
-}) {
-  const [val, setVal] = useState(value);
-  if (readOnly) return <span className="text-xs">{value || <span className="text-muted">—</span>}</span>;
+// Worst news first: a disqualifier, then something to look at, then plain facts. Each
+// flag carries its own dot and border so a row of four still reads as four things.
+function Flags({ row, seasons }: { row: BoardRow; seasons: number }) {
+  const flags: { key: string; label: string; tone: string; title?: string }[] = [];
+  if (row.leftJpa) flags.push({ key: "left", label: "left JPA", tone: "bad" });
+  if (row.selectedElsewhere)
+    flags.push({
+      key: "elsewhere",
+      label: "picked elsewhere",
+      tone: "bad",
+      title: `Also picked in ${row.selectedElsewhere}`,
+    });
+  if (row.starSteal.length > 0)
+    flags.push({
+      key: "steal",
+      label: `star steal ×${row.starSteal.length}`,
+      tone: "bad",
+      title: row.starSteal
+        .map(
+          (f) =>
+            `Round ${f.round}: #${f.attackerPosition} hit #${f.defenderPosition} (${f.stars}★, had ${f.starsBefore}★)`,
+        )
+        .join("\n"),
+    });
+  if (row.attacks < REQUIRED_ATTACKS)
+    flags.push({
+      key: "attacks",
+      label: `${row.attacks}/${REQUIRED_ATTACKS} attacks`,
+      tone: "warn",
+      title: "Short of a full set of attacks",
+    });
+  if (row.backToBack)
+    flags.push({
+      key: "b2b",
+      label: `B2B ${row.recentBonuses}`,
+      tone: "warn",
+      title: `${row.recentBonuses} bonuses in the last ${seasons} seasons`,
+    });
+  if (row.isAltAccount) flags.push({ key: "alt", label: "alt", tone: "mute" });
+  if (row.isAlt) flags.push({ key: "pn", label: `PN${row.pn}`, tone: "mute", title: "Not their main" });
+  if (row.recorded)
+    flags.push({
+      key: "history",
+      label: "in history",
+      tone: "good",
+      title: "Already recorded in bonus history for this season",
+    });
+
+  if (!flags.length) return <span className="text-xs text-muted">—</span>;
   return (
-    <input
-      className="input w-36 py-0.5 text-xs"
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => val !== value && onSave(val.trim())}
-    />
+    <div className="flex min-w-40 flex-wrap gap-1">
+      {flags.map((f) => (
+        <span key={f.key} className={`flag flag-${f.tone}`} title={f.title}>
+          {f.label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -517,7 +478,9 @@ function DiscordCell({ row, canEdit, onOpen }: { row: BoardRow; canEdit: boolean
       <div className="text-xs text-muted">{row.discordId ?? "no ID"}</div>
     </>
   ) : (
-    <span className="chip bg-bad/15 text-bad">{canEdit ? "link…" : "not linked"}</span>
+    <span className={canEdit ? "chip bg-bad/15 text-bad" : "flag flag-mute"}>
+      {canEdit ? "link…" : "not linked"}
+    </span>
   );
   if (!canEdit) return <div>{body}</div>;
   return (

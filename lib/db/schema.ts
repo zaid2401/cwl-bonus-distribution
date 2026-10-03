@@ -129,13 +129,11 @@ export const participants = pgTable(
     playerTag: text("player_tag").notNull(),
     name: text("name"),
     selected: boolean("selected").notNull().default(false),
-    transferToTag: text("transfer_to_tag"),
     attacksOverride: integer("attacks_override"),
     donationsOverride: integer("donations_override"),
     importedAttacks: integer("imported_attacks"),
     // Ticked when the player has left the alliance: they keep their row but lose the bonus.
     leftJpa: boolean("left_jpa").notNull().default(false),
-    remark: text("remark"),
     hidden: boolean("hidden").notNull().default(false),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.clanTag, t.playerTag] })],

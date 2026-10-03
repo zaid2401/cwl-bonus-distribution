@@ -33,17 +33,11 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
       ];
       rows.push(header);
     }
-    const nameByTag = new Map(board.rows.map((r) => [r.tag, r.name]));
     board.rows.forEach((r, i) => {
       const remarks: string[] = [];
       if (r.pn != null) remarks.push(`PN${r.pn}`);
       if (r.isAltAccount) remarks.push("Alt");
       if (r.leftJpa) remarks.push("Left JPA");
-      if (r.selected && r.transferToTag)
-        remarks.push(
-          `Bonus → ${nameByTag.get(r.transferToTag) ?? r.otherAccounts.find((o) => o.tag === r.transferToTag)?.name ?? r.transferToTag}`,
-        );
-      if (r.remark) remarks.push(r.remark);
       const idx = rows.length;
       rows.push([
         r.name,

@@ -167,11 +167,9 @@ export async function syncAll() {
 
 type PartPatch = Partial<{
   selected: boolean;
-  transferToTag: string | null;
   attacksOverride: number | null;
   donationsOverride: number | null;
   leftJpa: boolean;
-  remark: string | null;
 }>;
 
 export async function updateParticipant(
@@ -187,7 +185,7 @@ export async function updateParticipant(
     async () => {
       const db = await getDb();
       const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
-      if (season?.status === "finalized" && ("selected" in patch || "transferToTag" in patch))
+      if (season?.status === "finalized" && "selected" in patch)
         throw new Error("Season is finalized. Reopen it to change bonuses.");
       await db
         .insert(s.participants)

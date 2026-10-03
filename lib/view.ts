@@ -134,9 +134,6 @@ export interface BoardRow {
   selected: boolean;
   // Already in bonus history for this season, e.g. imported from the old sheet.
   recorded: boolean;
-  transferToTag: string | null;
-  remark: string | null;
-  otherAccounts: { tag: string; name: string }[];
   // Selected in another clan this season (same member).
   selectedElsewhere: string | null;
 }
@@ -165,12 +162,6 @@ function countAttacks(override: number | null, fromApi: number | null, imported:
   if (fromApi != null) return { attacks: fromApi, source: "api" as const };
   if (imported != null) return { attacks: imported, source: "import" as const };
   return { attacks: 0, source: "none" as const };
-}
-
-function otherAccountsOf(siblings: (typeof s.players.$inferSelect)[], discordId: string | null, tag: string) {
-  if (!discordId) return [];
-  const mine = siblings.filter((x) => x.discordId === discordId && x.tag !== tag);
-  return mine.map((x) => ({ tag: x.tag, name: x.name }));
 }
 
 // Eligible players first, ordered by donations. Everyone else falls in behind them by
@@ -228,12 +219,6 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
 
   const playerRows = tags.length ? await db.select().from(s.players).where(inArray(s.players.tag, tags)) : [];
   const playerBy = new Map(playerRows.map((p) => [p.tag, p]));
-
-  // Their other accounts, for bonus transfers.
-  const discordIds = [...new Set(playerRows.map((p) => p.discordId).filter(Boolean) as string[])];
-  const siblings = discordIds.length
-    ? await db.select().from(s.players).where(inArray(s.players.discordId, discordIds))
-    : [];
 
   // Donations come from the sheet imported for that game season and nowhere else. No
   // import, no numbers — a blank column is honest, a zero is not.
@@ -336,9 +321,6 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       eligible: isEligible({ attacks: counted.attacks, pn, isAltAccount, leftJpa }),
       selected: part?.selected ?? false,
       recorded: recordedKeys.has(key),
-      transferToTag: part?.transferToTag ?? null,
-      remark: part?.remark ?? null,
-      otherAccounts: otherAccountsOf(siblings, pl?.discordId ?? null, tag),
       selectedElsewhere: selectedByMember.get(key) ?? null,
     });
   }

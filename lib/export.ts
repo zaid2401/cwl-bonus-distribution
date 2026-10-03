@@ -50,7 +50,7 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
         r.tag,
         r.attacks,
         board.clanName,
-        r.donated || "",
+        r.donated ?? "",
         r.discordUsername ?? "",
         r.discordId ? `'${r.discordId}` : "",
         ...[...r.history].reverse().map((h) => (h ? "TRUE" : "FALSE")),

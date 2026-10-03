@@ -34,9 +34,9 @@ function searchText(r: BoardRow) {
     `${r.attacks}/${REQUIRED_ATTACKS}`,
     r.stars && `${r.stars} stars`,
     r.donated,
-    num(r.donated),
+    r.donated != null && num(r.donated),
     r.received,
-    num(r.received),
+    r.received != null && num(r.received),
     r.discordUsername,
     r.discordId,
     r.pn != null && `pn${r.pn}`,
@@ -214,7 +214,7 @@ export function BoardTable(props: {
                       onSave={(v) => part(r.tag, { donationsOverride: v })}
                     />
                   </td>
-                  <td className="td text-right text-muted">{num(r.received)}</td>
+                  <td className="td text-right text-muted">{r.received == null ? "—" : num(r.received)}</td>
                   <td className="td">
                     <button
                       className="text-left hover:text-accent"
@@ -390,7 +390,7 @@ function NumCell({
   title,
   format,
 }: {
-  value: number;
+  value: number | null;
   overridden: boolean;
   onSave: (v: number | null) => void;
   good?: boolean;
@@ -423,7 +423,7 @@ function NumCell({
         setEdit(true);
       }}
     >
-      {format ? num(value) : value}
+      {value == null ? "—" : format ? num(value) : value}
       {overridden && <sup className="text-accent">✎</sup>}
     </button>
   );

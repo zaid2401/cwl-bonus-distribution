@@ -344,7 +344,7 @@ export async function applyRecordedBonuses(seasonId: string) {
           row.isAlt ? 0 : 1,
           row.eligible ? 1 : 0,
           row.attacks,
-          row.donated,
+          row.donated ?? -1,
         ];
         const current = best.get(row.memberKey);
         if (!current || beats(score, current.score)) {

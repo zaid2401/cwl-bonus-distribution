@@ -50,9 +50,10 @@ against that member's history.
   group creates the row ticked; unticking removes the clan from totals, exports and sync without
   touching past seasons. Ticking before the first sync creates the season row too.
 - Every row in `clans` is a CWL clan. There is no clan type and no alliance flag any more.
-- `donations` is the only source of donation numbers: sheet imports (`clan_tag = 'IMPORT'`) and the
-  clan snapshots an older version collected. An import always wins. Nothing writes to it from the
-  game API any more, so a season without an import shows zeros.
+- `donations` holds the donation numbers, and only the `clan_tag = 'IMPORT'` rows are read. Without
+  an import for a season the board shows blanks, not zeros, and says so in the header. The clan
+  snapshots an older version collected are still in the table but ignored: they summed a player who
+  changed clans twice.
 - `participants.left_jpa` disqualifies a player for that season only. It is per season on purpose:
   someone who rejoins starts clean next month.
 - `bonus_history` is keyed by **member**: the Discord ID, or `tag:#TAG` when unlinked.

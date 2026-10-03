@@ -117,8 +117,8 @@ export interface BoardRow {
   attacksOverride: number | null;
   stars: number;
   starSteal: StarStealFlag[];
-  donated: number;
-  received: number;
+  donated: number | null;
+  received: number | null;
   donationsOverride: number | null;
   discordId: string | null;
   discordUsername: string | null;
@@ -152,6 +152,7 @@ export interface Board {
   roundsEnded: number;
   bonuses: number;
   bonusOverride: number | null;
+  donationsImported: boolean;
   prevSeasons: Season[];
   rows: BoardRow[];
   hasApiData: boolean;
@@ -172,12 +173,15 @@ function otherAccountsOf(siblings: (typeof s.players.$inferSelect)[], discordId:
   return mine.map((x) => ({ tag: x.tag, name: x.name }));
 }
 
-// Eligible players first, ordered by donations. Everyone else falls in behind them by attacks.
+// Eligible players first, ordered by donations. Everyone else falls in behind them by
+// attacks, and anyone the sheet does not mention sits below anyone it does.
 function compareBoardRows(a: BoardRow, b: BoardRow) {
   if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
   if (!a.eligible && a.attacks !== b.attacks) return b.attacks - a.attacks;
-  if (a.donated !== b.donated) return b.donated - a.donated;
-  if (a.received !== b.received) return b.received - a.received;
+  const donated = (b.donated ?? -1) - (a.donated ?? -1);
+  if (donated) return donated;
+  const received = (b.received ?? -1) - (a.received ?? -1);
+  if (received) return received;
   return a.name.localeCompare(b.name);
 }
 
@@ -231,26 +235,22 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     ? await db.select().from(s.players).where(inArray(s.players.discordId, discordIds))
     : [];
 
-  // Donations from the season this CWL scores on.
+  // Donations come from the sheet imported for that game season and nowhere else. No
+  // import, no numbers — a blank column is honest, a zero is not.
   const donationSeason = season.donationSeason ?? "";
   const dons = tags.length
     ? await db
         .select()
         .from(s.donations)
-        .where(and(eq(s.donations.season, donationSeason), inArray(s.donations.playerTag, tags)))
+        .where(
+          and(
+            eq(s.donations.season, donationSeason),
+            eq(s.donations.clanTag, "IMPORT"),
+            inArray(s.donations.playerTag, tags),
+          ),
+        )
     : [];
-  const donBy = new Map<string, { donated: number; received: number; imported: boolean }>();
-  for (const d of dons) {
-    const cur = donBy.get(d.playerTag);
-    if (d.clanTag === "IMPORT")
-      donBy.set(d.playerTag, { donated: d.donated, received: d.received, imported: true });
-    else if (!cur?.imported)
-      donBy.set(d.playerTag, {
-        donated: (cur?.donated ?? 0) + d.donated,
-        received: (cur?.received ?? 0) + d.received,
-        imported: false,
-      });
-  }
+  const donBy = new Map(dons.map((d) => [d.playerTag, d]));
 
   const prevSeasons = await previousSeasons(db, season);
   const prevIds = prevSeasons.map((p) => p.id);
@@ -320,8 +320,8 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       attacksOverride: part?.attacksOverride ?? null,
       stars,
       starSteal: starStealFlags(mine),
-      donated: part?.donationsOverride ?? don?.donated ?? 0,
-      received: don?.received ?? 0,
+      donated: part?.donationsOverride ?? don?.donated ?? null,
+      received: don?.received ?? null,
       donationsOverride: part?.donationsOverride ?? null,
       discordId: pl?.discordId ?? null,
       discordUsername: pl?.discordUsername ?? null,
@@ -356,6 +356,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     roundsEnded: rec.roundsEnded,
     bonuses: bonusCount(rec.wins, cs?.bonusOverride),
     bonusOverride: cs?.bonusOverride ?? null,
+    donationsImported: dons.length > 0,
     prevSeasons,
     rows,
     hasApiData,

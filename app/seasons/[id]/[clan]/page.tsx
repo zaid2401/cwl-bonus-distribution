@@ -33,7 +33,8 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
           <p className="text-muted">
             Record <span className="text-good">{board.wins}W</span> /{" "}
             <span className="text-bad">{board.losses}L</span> / {board.ties}T ({board.roundsEnded}/7 wars
-            ended) · Bonuses = 6 + wins · Donations from {season.donationSeason ?? "—"} ·
+            ended) · Bonuses = 6 + wins · Donations from {season.donationSeason ?? "—"}
+            {!board.donationsImported && <span className="text-warn"> (no sheet imported yet)</span>} ·
             {board.hasApiData ? " attacks from API" : " no API war data (using imported/manual attacks)"}
           </p>
         </div>

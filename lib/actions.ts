@@ -7,7 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "./db";
 import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
 import { coc, enc, type ApiClan, type ApiPlayer } from "./coc";
-import { snapshotDonations, snapshotPlayerStats, syncAllCwl, syncCwlClan } from "./sync";
+import { snapshotPlayerStats, syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
 import {
   importCwlExport,
@@ -160,19 +160,6 @@ export async function syncAll() {
       ok: bad.length === 0,
       message:
         `${res.length - bad.length}/${res.length} clans synced.` +
-        (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
-    };
-  });
-}
-
-export async function saveDonationsNow() {
-  return run(async () => {
-    const res = await snapshotDonations();
-    const bad = res.filter((r) => !r.ok);
-    return {
-      ok: bad.length === 0,
-      message:
-        `Donations saved for ${res.length - bad.length}/${res.length} alliance clans.` +
         (bad.length ? " " + bad.map((b) => `${b.clanTag}: ${b.message}`).join(" | ") : ""),
     };
   });

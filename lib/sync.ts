@@ -204,42 +204,6 @@ async function upsertPlayerNames(db: DB, members: { tag: string; name: string }[
     .onConflictDoUpdate({ target: s.players.tag, set: { name: sql`excluded.name` } });
 }
 
-export async function snapshotDonations(now = new Date()): Promise<SyncResult[]> {
-  const db = await getDb();
-  const season = gameSeasonAt(now);
-  const list = await db.select().from(s.clans).where(eq(s.clans.isAlliance, true));
-  return pool(list, 4, async (c) => {
-    try {
-      const res = await coc<{ items: ApiMember[] }>(`/clans/${enc(c.tag)}/members?limit=50`);
-      const items = res.items ?? [];
-      await upsertPlayerNames(db, items);
-      if (items.length)
-        await db
-          .insert(s.donations)
-          .values(
-            items.map((m) => ({
-              season,
-              playerTag: m.tag,
-              clanTag: c.tag,
-              donated: m.donations ?? 0,
-              received: m.donationsReceived ?? 0,
-            })),
-          )
-          .onConflictDoUpdate({
-            target: [s.donations.season, s.donations.playerTag, s.donations.clanTag],
-            set: {
-              donated: sql`greatest(${s.donations.donated}, excluded.donated)`,
-              received: sql`greatest(${s.donations.received}, excluded.received)`,
-              updatedAt: new Date(),
-            },
-          });
-      return { clanTag: c.tag, ok: true, message: `${items.length} members saved for season ${season}` };
-    } catch (e) {
-      return { clanTag: c.tag, ok: false, message: (e as Error).message };
-    }
-  });
-}
-
 export interface StatsSyncResult {
   ok: boolean;
   season: string;
@@ -330,16 +294,4 @@ export async function snapshotPlayerStats(now = new Date()): Promise<StatsSyncRe
       (failed ? ` ${failed} player(s) could not be read.` : "") +
       (clanErrors ? ` ${clanErrors} clan(s) could not be read.` : ""),
   };
-}
-
-export async function clansInvolvedIn(db: DB, seasonId: string, clanTag: string) {
-  return db
-    .select()
-    .from(s.cwlWars)
-    .where(
-      and(
-        eq(s.cwlWars.seasonId, seasonId),
-        or(eq(s.cwlWars.clanTag, clanTag), eq(s.cwlWars.opponentTag, clanTag)),
-      ),
-    );
 }

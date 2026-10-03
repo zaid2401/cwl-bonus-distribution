@@ -13,7 +13,7 @@ export async function donationTotals(db: DB, season: string, tags?: string[]) {
     );
   const out = new Map<
     string,
-    { donated: number; received: number; imported: boolean; clans: string[]; updatedAt: Date | null }
+    { donated: number; received: number; imported: boolean; updatedAt: Date | null }
   >();
   for (const d of rows) {
     const cur = out.get(d.playerTag);
@@ -22,17 +22,13 @@ export async function donationTotals(db: DB, season: string, tags?: string[]) {
         donated: d.donated,
         received: d.received,
         imported: true,
-        clans: cur?.clans ?? [],
         updatedAt: d.updatedAt,
       });
-    } else if (cur?.imported) {
-      cur.clans.push(d.clanTag);
-    } else {
+    } else if (!cur?.imported) {
       out.set(d.playerTag, {
         donated: (cur?.donated ?? 0) + d.donated,
         received: (cur?.received ?? 0) + d.received,
         imported: false,
-        clans: [...(cur?.clans ?? []), d.clanTag],
         updatedAt: !cur?.updatedAt || d.updatedAt > cur.updatedAt ? d.updatedAt : cur.updatedAt,
       });
     }
@@ -59,7 +55,6 @@ export interface AttackRow {
   cells: AttackCell[]; // one per round
   attacks: number;
   stars: number;
-  inLineup: number;
   pending: number;
   missed: number;
 }
@@ -154,7 +149,6 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
     const cells: AttackCell[] = [];
     let attacksMade = 0;
     let stars = 0;
-    let inLineup = 0;
     let pending = 0;
     let missed = 0;
 
@@ -172,7 +166,6 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
         });
         attacksMade++;
         stars += hit.stars;
-        inLineup++;
         continue;
       }
       if (position == null) {
@@ -180,7 +173,6 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
         continue;
       }
 
-      inLineup++;
       const warState = stateOfRound.get(round);
       if (warState === "warEnded") {
         cells.push({ state: "missed", position });
@@ -201,7 +193,6 @@ export async function attacksBoard(seasonId: string, clanTag: string, dbIn?: DB)
       cells,
       attacks: attacksMade,
       stars,
-      inLineup,
       pending,
       missed,
     });
@@ -257,16 +248,4 @@ export async function attacksOverview(seasonId: string): Promise<AttackSummary[]
     });
   }
   return out;
-}
-
-export async function donationSummary(season: string) {
-  const db = await getDb();
-  const [row] = await db
-    .select({
-      players: sql<number>`count(distinct ${s.donations.playerTag})`,
-      donated: sql<number>`coalesce(sum(${s.donations.donated}), 0)`,
-    })
-    .from(s.donations)
-    .where(eq(s.donations.season, season));
-  return { players: Number(row?.players ?? 0), donated: Number(row?.donated ?? 0) };
 }

@@ -3,7 +3,7 @@ import { count, eq, ne } from "drizzle-orm";
 import { getDb, schema as s } from "@/lib/db";
 import { listSeasons } from "@/lib/view";
 import { ActionButton } from "@/components/ActionButton";
-import { syncAll, saveDonationsNow } from "@/lib/actions";
+import { syncAll } from "@/lib/actions";
 import { NewSeasonForm } from "@/components/NewSeasonForm";
 import { gameSeasonAt } from "@/lib/util";
 
@@ -37,9 +37,6 @@ export default async function Home() {
         <div className="flex flex-wrap items-start gap-2">
           <ActionButton action={syncAll} className="btn btn-primary" pendingText="Syncing CWL…">
             Sync CWL now
-          </ActionButton>
-          <ActionButton action={saveDonationsNow} pendingText="Saving…">
-            Save donations now
           </ActionButton>
         </div>
       </div>

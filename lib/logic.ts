@@ -74,14 +74,6 @@ export function memberKey(discordId: string | null | undefined, tag: string): st
   return discordId?.trim() ? discordId.trim() : `tag:${tag}`;
 }
 
-export function recentBonusCount(
-  member: string,
-  prevSeasonIds: string[],
-  history: Map<string, Set<string>>,
-): number {
-  return prevSeasonIds.filter((s) => history.get(s)?.has(member)).length;
-}
-
 export const isAlt = (pn: number | null | undefined) => pn != null && pn >= 2;
 
 export function isEligible(p: { attacks: number; pn: number | null; isGuest: boolean }): boolean {

@@ -62,9 +62,10 @@ COC_API_TOKEN=your-token
 ## A second login for the bonus leader
 
 Set `BONUS_PASSWORD` to anything you like and give it to the leader who hands out bonuses. Signing in
-with it opens the current season only, read-only, with one exception: the **Bonus** checkbox. They
-cannot touch clans, players, imports, settings, attack or donation numbers, Discord links, PN, Alt,
-Left JPA, remarks, transfers, sync, export, finalize or any other season.
+with it opens the current season and its clan boards, read-only, with one exception: the **Bonus**
+checkbox. They cannot touch clans, players, imports, settings, live attacks, attack or donation
+numbers, Discord links, PN, Alt, Left JPA, remarks, transfers, sync, export, finalize or any other
+season.
 
 It is the same database, so their picks show up on your side the moment they tick a box. Changing
 `BONUS_PASSWORD` signs them out; leaving it unset means the second login does not work at all.

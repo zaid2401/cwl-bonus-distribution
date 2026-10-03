@@ -59,9 +59,11 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks`}>
-            Live attacks
-          </Link>
+          {admin && (
+            <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks`}>
+              Live attacks
+            </Link>
+          )}
           {admin && totals.recorded > totals.selected && !finalized && (
             <ActionButton
               action={applyRecordedBonuses.bind(null, id)}

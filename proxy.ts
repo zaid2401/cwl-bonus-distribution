@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, sessionRole } from "./lib/auth";
 
-// The bonus leader only needs the season pages. Everything else — clans, players, imports,
-// settings, the export routes — is Zaid's, and a wrong turn lands back on the board.
-const bonusCanSee = (path: string) =>
-  path === "/" || path.startsWith("/seasons/") || path.startsWith("/_next/");
+// The bonus leader only needs the season and its clan boards. Everything else — clans,
+// players, imports, settings, live attacks, the export routes — is Zaid's, and a wrong turn
+// lands back on the board.
+function bonusCanSee(path: string): boolean {
+  if (path === "/" || path.startsWith("/_next/")) return true;
+  if (!path.startsWith("/seasons/")) return false;
+  return path.split("/").filter(Boolean).at(-1) !== "attacks";
+}
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

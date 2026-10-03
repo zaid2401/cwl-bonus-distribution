@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getSeason } from "@/lib/view";
 import { attacksBoard, attacksOverview } from "@/lib/live";
 import { AttacksGrid } from "@/components/AttacksGrid";
@@ -14,7 +14,8 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
   const { id: raw } = await props.params;
   const sp = await props.searchParams;
   const id = decodeURIComponent(raw);
-  const admin = await seasonGate(id);
+  // Round-by-round attacks are Zaid's view, not the bonus leader's.
+  if (!(await seasonGate(id))) redirect(`/seasons/${encodeURIComponent(id)}`);
   const season = await getSeason(id);
   if (!season) notFound();
 
@@ -47,15 +48,13 @@ export default async function AttacksPage(props: PageProps<"/seasons/[id]/attack
             <span className="text-bad">{totals.missed} missed</span>
           </p>
         </div>
-        {admin && (
-          <LiveControls
-            action={syncAll}
-            label="Sync all clans"
-            pendingText="Syncing…"
-            lastUpdated={board?.lastFetched ? new Date(board.lastFetched).toLocaleString() : null}
-            intervalSeconds={300}
-          />
-        )}
+        <LiveControls
+          action={syncAll}
+          label="Sync all clans"
+          pendingText="Syncing…"
+          lastUpdated={board?.lastFetched ? new Date(board.lastFetched).toLocaleString() : null}
+          intervalSeconds={300}
+        />
       </div>
 
       <div className="card overflow-x-auto">

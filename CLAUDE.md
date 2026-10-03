@@ -38,10 +38,12 @@ The password decides who you are, so there are no user rows anywhere: `ADMIN_PAS
 `BONUS_PASSWORD` is the leader who only hands out bonuses. The session cookie is a signature of
 whichever password minted it, which is how `sessionRole()` tells them apart.
 
-The bonus account sees the current season's pages and nothing else, read-only except the Bonus
-checkbox — same database, so a tick shows up for Zaid immediately. Three layers hold that:
+The bonus account sees the current season and its clan boards and nothing else — not live
+attacks — read-only except the Bonus checkbox. Same database, so a tick shows up for Zaid
+immediately. Three layers hold that:
 
-- `proxy.ts` sends it back to the board for any path outside `/` and `/seasons/`.
+- `proxy.ts` sends it back to the board for any path outside `/` and `/seasons/`, and for the
+  `/attacks` page inside it.
 - `seasonGate()` in `lib/session.ts` sends it back for any season but the newest, and tells the page
   whether to render admin controls. Pages pass that down as `canEdit`.
 - `run()` in `lib/actions.ts` takes the role an action needs, defaulting to admin.

@@ -41,9 +41,11 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${clan}`}>
-            Attack details
-          </Link>
+          {admin && (
+            <Link className="btn" href={`/seasons/${encodeURIComponent(id)}/attacks?clan=${clan}`}>
+              Attack details
+            </Link>
+          )}
           {admin && !finalized && (
             <ActionButton action={syncClan.bind(null, board.clanTag)} pendingText="Syncing…">
               Sync this clan

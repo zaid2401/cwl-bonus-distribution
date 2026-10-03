@@ -11,8 +11,8 @@ recording CWL bonuses, it does not belong in this app.
 ## The rules it encodes
 
 Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies when they used **7/7
-attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not a guest** and have
-not been ticked **Left JPA** on that season's board. Among those, donations from the **previous game
+attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not an external
+account** and have not been ticked **Left JPA** on that season's board. Among those, donations from the **previous game
 season** decide the order. Nobody is auto-picked: the board sorts and flags, Zaid ticks the boxes.
 
 Flags are advisory only, never exclusions:

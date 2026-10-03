@@ -10,7 +10,7 @@ type P = {
   discordId: string | null;
   discordUsername: string | null;
   pn: number | null;
-  isGuest: boolean;
+  isExternal: boolean;
   notes: string | null;
 };
 
@@ -27,7 +27,7 @@ export function PlayersTable({ rows }: { rows: P[] }) {
               <th className="th">Discord ID</th>
               <th className="th">Discord username</th>
               <th className="th">PN</th>
-              <th className="th">Guest</th>
+              <th className="th">External</th>
               <th className="th">Notes</th>
               <th className="th"></th>
             </tr>
@@ -94,9 +94,9 @@ function Row({ p }: { p: P }) {
       <td className="td">
         <input
           type="checkbox"
-          checked={p.isGuest}
+          checked={p.isExternal}
           disabled={pending}
-          onChange={(e) => exec(() => savePlayer({ tag: p.tag, isGuest: e.target.checked }))}
+          onChange={(e) => exec(() => savePlayer({ tag: p.tag, isExternal: e.target.checked }))}
         />
       </td>
       <td className="td">

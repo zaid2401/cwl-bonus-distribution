@@ -170,7 +170,7 @@ export async function importPlayers(source: string) {
   const cId = findCol(header, ["ID", "Discord ID", "User ID"]);
   const cUser = findCol(header, ["Username", "Discord Username"]);
   const cPn = findCol(header, ["PN", "Priority Number", "Remarks"]);
-  const cGuest = findCol(header, ["Guest"]);
+  const cExternal = findCol(header, ["External", "Guest"]);
   if (cTag < 0) throw new Error(`Need a "Tag" column. Found: ${header.join(", ")}`);
   let n = 0;
   for (const r of rows) {
@@ -182,7 +182,7 @@ export async function importPlayers(source: string) {
     if (cId >= 0 && r[cId]?.trim()) set.discordId = r[cId].trim().replace(/^'/, "");
     if (cUser >= 0 && r[cUser]?.trim()) set.discordUsername = r[cUser].trim();
     if (pnMatch && /pn|^\d/i.test(r[cPn])) set.pn = Number(pnMatch[1]);
-    if (cGuest >= 0 && r[cGuest]?.trim()) set.isGuest = truthy(r[cGuest]);
+    if (cExternal >= 0 && r[cExternal]?.trim()) set.isExternal = truthy(r[cExternal]);
     await db
       .insert(s.players)
       .values({ tag, name: set.name ?? "", ...set })

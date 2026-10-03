@@ -64,6 +64,13 @@
       "when": 1791055039597,
       "tag": "0008_drop_player_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791055673660,
+      "tag": "0009_rename_guest_to_external",
+      "breakpoints": true
     }
   ]
 }

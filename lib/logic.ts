@@ -79,8 +79,8 @@ export const isAlt = (pn: number | null | undefined) => pn != null && pn >= 2;
 export function isEligible(p: {
   attacks: number;
   pn: number | null;
-  isGuest: boolean;
+  isExternal: boolean;
   leftJpa: boolean;
 }): boolean {
-  return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isGuest && !p.leftJpa;
+  return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isExternal && !p.leftJpa;
 }

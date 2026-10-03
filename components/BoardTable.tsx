@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import type { BoardRow } from "@/lib/view";
+import { REQUIRED_ATTACKS } from "@/lib/logic";
 import { addPlayerToBoard, savePlayer, setBonusOverride, updateParticipant } from "@/lib/actions";
 import { Result, useAction } from "./ActionButton";
 
@@ -22,6 +23,38 @@ function pickedClass(picked: number, bonuses: number) {
 
 type Filter = "all" | "eligible" | "selected" | "recorded";
 
+// Everything the row shows, in one lowercase string, so the box matches any column:
+// numbers with or without their commas, tags, Discord names, chips, remarks.
+function searchText(r: BoardRow) {
+  const bits = [
+    r.name,
+    r.tag,
+    r.townhall && `th${r.townhall}`,
+    r.attacks,
+    `${r.attacks}/${REQUIRED_ATTACKS}`,
+    r.stars && `${r.stars} stars`,
+    r.donated,
+    num(r.donated),
+    r.received,
+    num(r.received),
+    r.discordUsername,
+    r.discordId,
+    r.pn != null && `pn${r.pn}`,
+    r.remark,
+    r.transferToTag,
+    r.eligible && "eligible",
+    r.selected && "picked bonus",
+    r.recorded && "in history",
+    r.backToBack && `b2b ${r.recentBonuses}`,
+    r.starSteal.length > 0 && "star steal",
+    r.isAlt && "alt",
+    r.isExternal && "external",
+    r.leftJpa && "left jpa",
+    r.selectedElsewhere && `picked elsewhere ${r.selectedElsewhere}`,
+  ];
+  return bits.filter(Boolean).join(" ").toLowerCase();
+}
+
 export function BoardTable(props: {
   seasonId: string;
   clanTag: string;
@@ -40,6 +73,7 @@ export function BoardTable(props: {
 
   const picked = rows.filter((r) => r.selected).length;
   const recorded = rows.filter((r) => r.recorded).length;
+  const haystack = useMemo(() => new Map(rows.map((r) => [r.tag, searchText(r)])), [rows]);
   const hintRank = useMemo(() => {
     const m = new Map<string, number>();
     rows.filter((r) => r.eligible).forEach((r, i) => i < props.bonuses && m.set(r.tag, i + 1));
@@ -53,14 +87,13 @@ export function BoardTable(props: {
     return true;
   }
 
+  // Several words all have to match, which is how you narrow 50 players down to one.
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+
   function matchesSearch(r: BoardRow) {
-    if (!q) return true;
-    const term = q.toLowerCase();
-    return (
-      r.name.toLowerCase().includes(term) ||
-      r.tag.includes(q.toUpperCase()) ||
-      (r.discordUsername ?? "").toLowerCase().includes(term)
-    );
+    if (!terms.length) return true;
+    const text = haystack.get(r.tag) ?? "";
+    return terms.every((t) => text.includes(t));
   }
 
   const visible = rows.filter((r) => matchesFilter(r) && matchesSearch(r));
@@ -99,7 +132,7 @@ export function BoardTable(props: {
         </div>
         <input
           className="input w-48"
-          placeholder="Search…"
+          placeholder="Search anything…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -121,7 +154,7 @@ export function BoardTable(props: {
               <th className="th text-right">Received</th>
               <th className="th">Discord</th>
               <th className="th">PN</th>
-              <th className="th">Guest</th>
+              <th className="th">External</th>
               <th className="th" title="Left the alliance — no bonus">
                 Left JPA
               </th>
@@ -204,8 +237,8 @@ export function BoardTable(props: {
                     <input
                       type="checkbox"
                       className="size-4"
-                      checked={r.isGuest}
-                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isGuest: e.target.checked }))}
+                      checked={r.isExternal}
+                      onChange={(e) => exec(() => savePlayer({ tag: r.tag, isExternal: e.target.checked }))}
                     />
                   </td>
                   <td className="td">
@@ -263,7 +296,7 @@ export function BoardTable(props: {
                         </span>
                       )}
                       {r.isAlt && <span className="chip bg-panel2 text-muted">alt</span>}
-                      {r.isGuest && <span className="chip bg-panel2 text-muted">guest</span>}
+                      {r.isExternal && <span className="chip bg-panel2 text-muted">external</span>}
                       {r.leftJpa && <span className="chip bg-bad/15 text-bad">left JPA</span>}
                       {r.attacks < 7 && <span className="chip bg-panel2 text-muted">{r.attacks}/7</span>}
                       {r.selectedElsewhere && (

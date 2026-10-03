@@ -37,7 +37,7 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
     board.rows.forEach((r, i) => {
       const remarks: string[] = [];
       if (r.pn != null) remarks.push(`PN${r.pn}`);
-      if (r.isGuest) remarks.push("Guest");
+      if (r.isExternal) remarks.push("External");
       if (r.leftJpa) remarks.push("Left JPA");
       if (r.selected && r.transferToTag)
         remarks.push(

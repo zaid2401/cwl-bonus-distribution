@@ -137,7 +137,6 @@ export const participants = pgTable(
     importedAttacks: integer("imported_attacks"),
     // Ticked when the player has left the alliance: they keep their row but lose the bonus.
     leftJpa: boolean("left_jpa").notNull().default(false),
-    hidden: boolean("hidden").notNull().default(false),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.clanTag, t.playerTag] })],
 );

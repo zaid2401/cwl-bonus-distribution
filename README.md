@@ -47,16 +47,16 @@ COC_API_TOKEN=your-token
 2. At https://vercel.com, click **Add New → Project** and import the repo.
 3. Add these environment variables:
 
-| Name                           | Value                                                     |
-| ------------------------------ | --------------------------------------------------------- |
-| `ADMIN_PASSWORD`               | your login password                                       |
-| `BONUS_PASSWORD`               | the bonus leader's password (optional, see below)         |
-| `COC_API_TOKEN`                | CoC API token                                             |
-| `JPA_API_KEY`                  | clashwithjpa.com API key (Manager scope), for **Sync PN** |
-| `DATABASE_URL`                 | Supabase pooler URI                                       |
-| `CRON_SECRET`                  | any long random string                                    |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4                                                |
-| `GOOGLE_PRIVATE_KEY`           | see step 4                                                |
+| Name                           | Value                                             |
+| ------------------------------ | ------------------------------------------------- |
+| `ADMIN_PASSWORD`               | your login password                               |
+| `AUTH_SECRET`                  | long random string; see below                     |
+| `BONUS_PASSWORD`               | the bonus leader's password (optional, see below) |
+| `COC_API_TOKEN`                | CoC API token                                     |
+| `DATABASE_URL`                 | Supabase pooler URI                               |
+| `CRON_SECRET`                  | any long random string                            |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4                                        |
+| `GOOGLE_PRIVATE_KEY`           | see step 4                                        |
 
 4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run syncs CWL.
 
@@ -88,6 +88,20 @@ or donation numbers, Discord links, sync, export, finalize or any other season.
 
 It is the same database, so their picks show up on your side the moment they tick a box. Changing
 `BONUS_PASSWORD` signs them out; leaving it unset means the second login does not work at all.
+
+## Keeping it locked
+
+The password is the whole key to this app, so:
+
+- **Set `AUTH_SECRET`** to a long random string — `openssl rand -hex 32`, or any 50-odd random
+  characters. It is mixed into the signature on the login cookie, so even a stolen cookie gives
+  away nothing about the password itself. Changing it signs everyone out, which is also how you
+  throw out a cookie you think somebody else has.
+- Sessions last 30 days and then expire on the server, not just in the browser.
+- Ten wrong passwords from one address lock that address out for fifteen minutes, and every wrong
+  answer is slowed down on purpose. Long passwords still matter: make them long and unguessable.
+- `npm audit` should say "found 0 vulnerabilities". Run it now and then, and run
+  `npm audit fix` when it does not.
 
 ## 4. Google Sheet export (optional)
 

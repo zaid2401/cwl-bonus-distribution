@@ -36,8 +36,9 @@ as four things. A clean row shows a dash, never an empty cell.
 ## Two accounts
 
 The password decides who you are, so there are no user rows anywhere: `ADMIN_PASSWORD` is Zaid and
-`BONUS_PASSWORD` is the leader who only hands out bonuses. The session cookie is a signature of
-whichever password minted it, which is how `sessionRole()` tells them apart.
+`BONUS_PASSWORD` is the leader who only hands out bonuses. The cookie is
+`v1.<role>.<expiry>.<signature>`, signed with that role's password, which is how `sessionRole()`
+tells them apart.
 
 The bonus account sees the current season and its clan boards and nothing else — not live
 attacks — read-only except the Bonus checkbox. Same database, so a tick shows up for Zaid
@@ -56,6 +57,32 @@ immediately. Three layers hold that:
   anything new that the bonus account can reach needs its own `run()` role.
 
 Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
+
+## Security
+
+Two passwords on the public internet are the whole of the front door, so:
+
+- The role and the expiry are **inside** the signature. A bonus cookie cannot be edited into an
+  admin one without the admin password, and a copied cookie stops working after 30 days —
+  `maxAge` on its own only asks the browser nicely. `AUTH_SECRET` is mixed into the signing key:
+  optional, and worth setting, because without it a stolen cookie is an offline guess at a short
+  password.
+- Ten wrong passwords from one address cost fifteen minutes (`lockedFor` and `noteFailure` in
+  `lib/auth.ts`), and every wrong answer waits 400ms first. The counter lives in memory, per
+  instance, on purpose: a shared one would mean a database write per guess.
+- `passwordRole()` compares digests rather than passwords, so a guess takes the same time
+  however much of it was right.
+- Every table gets `ENABLE ROW LEVEL SECURITY` with no policy, which shuts Supabase's public
+  Data API. **A new table needs its own `ALTER` in the migration** — the app connects as the
+  table owner and will never notice the omission.
+- `next.config.ts` carries the CSP and the other headers. Everything comes from `self`, so a
+  font or a script from anywhere else is blocked until it is named there. `script-src` keeps
+  `unsafe-inline` because Next's own bootstrap has no nonce in a static header.
+- `safeCell()` in `lib/csv.ts` marks anything opening with `=`, `+`, `-` or `@` as text. A player
+  can be called `=IMPORTXML(...)`, and both the CSV and the Sheets export are opened by people.
+- Route handlers check the session themselves as well as sitting behind the proxy.
+- `npm audit` should say nothing. It found a critical RCE in `next` 16.3.5 once already, so the
+  floor in `package.json` is 16.3.8.
 
 ## Shape of the code
 

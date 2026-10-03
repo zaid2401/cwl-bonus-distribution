@@ -1,11 +1,21 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "./db";
-import { SESSION_COOKIE, passwordRole, sessionRole, sessionToken, type Role } from "./auth";
+import {
+  SESSION_COOKIE,
+  SESSION_DAYS,
+  clearFailures,
+  lockedFor,
+  mintSession,
+  noteFailure,
+  passwordRole,
+  sessionRole,
+  type Role,
+} from "./auth";
 import { coc, enc, type ApiClan } from "./coc";
 import { syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
@@ -47,13 +57,26 @@ async function run(fn: () => Promise<string | ActionResult>, need: Role = "admin
 
 export async function login(_: unknown, form: FormData): Promise<ActionResult> {
   if (!process.env.ADMIN_PASSWORD) return { ok: false, message: "ADMIN_PASSWORD is not set on the server." };
+  // Vercel puts the caller first in the list; everything after it is whatever they claimed.
+  const ip = ((await headers()).get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const locked = lockedFor(ip);
+  if (locked)
+    return { ok: false, message: `Too many wrong passwords. Try again in ${Math.ceil(locked / 60)} min.` };
+
   const pw = String(form.get("password") ?? "");
-  if (!passwordRole(pw)) return { ok: false, message: "Wrong password." };
-  (await cookies()).set(SESSION_COOKIE, await sessionToken(pw), {
+  const role = await passwordRole(pw);
+  if (!role) {
+    noteFailure(ip);
+    // A wrong answer is never instant, so guessing costs real time before the lockout bites.
+    await new Promise((r) => setTimeout(r, 400));
+    return { ok: false, message: "Wrong password." };
+  }
+  clearFailures(ip);
+  (await cookies()).set(SESSION_COOKIE, await mintSession(role, pw), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: SESSION_DAYS * 86_400,
     path: "/",
   });
   redirect("/");

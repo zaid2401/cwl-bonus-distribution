@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { parseCsv } from "./csv";
+import { parseCsv, safeCell } from "./csv";
 
 export async function loadRows(source: string): Promise<string[][]> {
   const src = source.trim();
@@ -108,7 +108,9 @@ export async function writeSheetTab(sheetUrl: string, data: SheetExport): Promis
 
   await api(`/values/${encodeURIComponent(`'${data.title}'!A1`)}?valueInputOption=USER_ENTERED`, {
     method: "PUT",
-    body: JSON.stringify({ values: data.rows }),
+    // USER_ENTERED so '123 lands as text and numbers stay numbers — which also means a
+    // formula would be evaluated, hence safeCell.
+    body: JSON.stringify({ values: data.rows.map((r) => r.map(safeCell)) }),
   });
 
   const color = (r: number, g: number, b: number) => ({ red: r, green: g, blue: b });

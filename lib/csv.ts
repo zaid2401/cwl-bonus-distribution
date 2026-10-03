@@ -37,12 +37,19 @@ export function toCsv(rows: (string | number | boolean | null | undefined)[][]):
     .map((r) =>
       r
         .map((v) => {
-          const s = v == null ? "" : String(v);
+          const s = v == null ? "" : String(safeCell(v));
           return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         })
         .join(","),
     )
     .join("\r\n");
+}
+
+// A player can call themselves =IMPORTXML(...) and a spreadsheet will happily run it when
+// the export is opened. Marking the cell as text is enough: Sheets hides the quote, Excel
+// shows it, and neither one dials out.
+export function safeCell<T>(v: T): T | string {
+  return typeof v === "string" && /^[=+@\t\r-]/.test(v) ? `'${v}` : v;
 }
 
 export function findCol(header: string[], candidates: string[]): number {

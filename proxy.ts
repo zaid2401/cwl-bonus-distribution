@@ -12,7 +12,7 @@ function bonusCanSee(path: string): boolean {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname === "/login" || pathname.startsWith("/api/cron")) return NextResponse.next();
+  if (pathname === "/login" || pathname === "/api/cron") return NextResponse.next();
   const role = await sessionRole(req.cookies.get(SESSION_COOKIE)?.value);
   if (!role) {
     if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

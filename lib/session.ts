@@ -9,10 +9,6 @@ export async function currentRole(): Promise<Role | null> {
   return sessionRole((await cookies()).get(SESSION_COOKIE)?.value);
 }
 
-export async function isAdmin(): Promise<boolean> {
-  return (await currentRole()) === "admin";
-}
-
 // Every season page starts here. The bonus leader gets the CWL that is on now and nothing
 // older, so a stale link or a typed id puts them back on it.
 export async function seasonGate(seasonId: string): Promise<boolean> {

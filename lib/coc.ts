@@ -94,15 +94,6 @@ export interface ApiWar {
   opponent: ApiWarClan;
 }
 
-export interface ApiPlayer {
-  tag: string;
-  name: string;
-  townHallLevel?: number;
-  donations?: number;
-  donationsReceived?: number;
-  clan?: { tag: string; name: string };
-}
-
 export interface ApiClan {
   tag: string;
   name: string;

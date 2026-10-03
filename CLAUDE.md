@@ -27,6 +27,10 @@ Flags are advisory only, never exclusions:
 - **Star steal** — after a player passes 8 stars, any hit on a base numbered below their own war
   position.
 
+`Flags` in `BoardTable.tsx` renders them worst first — disqualifier, then something to look at,
+then plain facts — as `.flag` pills with their own dot and border, so four on one row still read
+as four things. A clean row shows a dash, never an empty cell.
+
 `lib/logic.ts` holds every constant and the pure functions, and is the only part with unit tests.
 
 ## Two accounts
@@ -43,6 +47,9 @@ immediately. Three layers hold that:
   `/attacks` page inside it.
 - `seasonGate()` in `lib/session.ts` sends it back for any season but the newest, and tells the page
   whether to render admin controls. Pages pass that down as `canEdit`.
+- The board drops the PN, Alt and Left JPA columns for that account — 9 columns against 12 — and
+  every remaining control is inert bar the Bonus checkbox. The state those columns set is still
+  visible in **Flags**, which is the point: they read it, they just cannot change it.
 - `run()` in `lib/actions.ts` takes the role an action needs, defaulting to admin.
   `updateParticipant` asks for "bonus" only when the patch is exactly `{ selected }` — anything else
   in it, even alongside `selected`, is an admin edit. **Hiding a control is not refusing a write**:
@@ -98,7 +105,8 @@ Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
 Members apply for CWL on the website and pick their preference number there, so PN is read from
 it rather than typed in twice. `JPA_API_KEY` goes in the `x-api-key` header; Manager scope covers
 everything this app reads. Every response is `{success, data}` or `{success, error}`, which
-`lib/jpa.ts` unwraps.
+`lib/jpa.ts` unwraps. Only `npm run sync-pn` reads the key, out of `.env.local`; the deployed app
+never calls that API, so Vercel does not need it.
 
 Their seasons are integer ids with a month name and year; ours are `2026-10`. `matchSeason()`
 pairs them on month and year, and when a month holds two CWLs it pairs them oldest first, so our
@@ -153,6 +161,13 @@ somewhere scratch when running throwaway scripts.
 To drive the app against the mock game API, set `COC_API_BASE=http://localhost:4010/v1` and
 `COC_API_TOKEN=test` in `.env.local`.
 
+**Nothing under `scripts/` loads `.env.local`** — Next does that, `tsx` does not. So `npm run
+db:migrate` on its own migrates the embedded database and says "Database is up to date", having
+never touched production. Pass `DATABASE_URL` explicitly when you mean production.
+`scripts/sync-pn.mts` carries its own loader, and it fills in **only names the shell left out**:
+`DATABASE_URL=` on the command line means the local database and must beat the file, or a test
+you believed was local writes to production. That has happened.
+
 Auth is off in dev when `ADMIN_PASSWORD` is empty, and `.env.development.local` wins over
 `.env.local`, so a file holding just `ADMIN_PASSWORD=` gets past the login screen — as admin. To try
 the bonus account instead, that file needs a real `ADMIN_PASSWORD` and a `BONUS_PASSWORD`, plus an
@@ -186,7 +201,8 @@ memory note on writing code that reads as human-written.
 ## Deliberately absent
 
 Multiplayer attack tracking, the Latecomers clan type, the alliance/CWL clan split, bonus transfers
-to an alt, free-text remarks on a player, and every form of live donation tracking (the Donations
+to an alt, free-text remarks on a player, a **Sync PN button**, a **GitHub Actions job** for the same
+sync (both blocked by Cloudflare, see above), and every form of live donation tracking (the Donations
 page, `player_stats`, tracked players, the daily snapshot) were all removed. Donations arrive by
 import now. A bonus is recorded against the account that was ticked, under that member's key. Don't
 bring any of it back without asking.

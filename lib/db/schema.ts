@@ -20,7 +20,6 @@ export const players = pgTable(
     // 1 = main account, 2 and up are alts.
     pn: integer("pn"),
     isGuest: boolean("is_guest").notNull().default(false),
-    isTracked: boolean("is_tracked").notNull().default(false),
     notes: text("notes"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -137,6 +136,8 @@ export const participants = pgTable(
     attacksOverride: integer("attacks_override"),
     donationsOverride: integer("donations_override"),
     importedAttacks: integer("imported_attacks"),
+    // Ticked when the player has left the alliance: they keep their row but lose the bonus.
+    leftJpa: boolean("left_jpa").notNull().default(false),
     remark: text("remark"),
     hidden: boolean("hidden").notNull().default(false),
   },
@@ -167,23 +168,6 @@ export const bonusHistory = pgTable(
     source: text("source").notNull().default("app"),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.memberKey] })],
-);
-
-// Counters only go up inside a season, so every write keeps the highest value seen.
-export const playerStats = pgTable(
-  "player_stats",
-  {
-    season: text("season").notNull(),
-    playerTag: text("player_tag").notNull(),
-    name: text("name").notNull().default(""),
-    clanTag: text("clan_tag"),
-    clanName: text("clan_name"),
-    donated: integer("donated").notNull().default(0),
-    received: integer("received").notNull().default(0),
-    townhall: integer("townhall"),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [primaryKey({ columns: [t.season, t.playerTag] })],
 );
 
 export const settings = pgTable("settings", {

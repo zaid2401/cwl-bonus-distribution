@@ -38,6 +38,7 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
       const remarks: string[] = [];
       if (r.pn != null) remarks.push(`PN${r.pn}`);
       if (r.isGuest) remarks.push("Guest");
+      if (r.leftJpa) remarks.push("Left JPA");
       if (r.selected && r.transferToTag)
         remarks.push(
           `Bonus → ${nameByTag.get(r.transferToTag) ?? r.otherAccounts.find((o) => o.tag === r.transferToTag)?.name ?? r.transferToTag}`,

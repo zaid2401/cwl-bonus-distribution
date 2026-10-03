@@ -1,40 +1,6 @@
-import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import { REQUIRED_ATTACKS, warResult } from "./logic";
-
-export async function donationTotals(db: DB, season: string, tags?: string[]) {
-  const rows = await db
-    .select()
-    .from(s.donations)
-    .where(
-      tags?.length
-        ? and(eq(s.donations.season, season), inArray(s.donations.playerTag, tags))
-        : eq(s.donations.season, season),
-    );
-  const out = new Map<
-    string,
-    { donated: number; received: number; imported: boolean; updatedAt: Date | null }
-  >();
-  for (const d of rows) {
-    const cur = out.get(d.playerTag);
-    if (d.clanTag === "IMPORT") {
-      out.set(d.playerTag, {
-        donated: d.donated,
-        received: d.received,
-        imported: true,
-        updatedAt: d.updatedAt,
-      });
-    } else if (!cur?.imported) {
-      out.set(d.playerTag, {
-        donated: (cur?.donated ?? 0) + d.donated,
-        received: (cur?.received ?? 0) + d.received,
-        imported: false,
-        updatedAt: !cur?.updatedAt || d.updatedAt > cur.updatedAt ? d.updatedAt : cur.updatedAt,
-      });
-    }
-  }
-  return out;
-}
 
 // --- CWL attacks, round by round
 

@@ -57,6 +57,13 @@
       "when": 1791042792412,
       "tag": "0007_drop_attack_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791055039597,
+      "tag": "0008_drop_player_stats",
+      "breakpoints": true
     }
   ]
 }

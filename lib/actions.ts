@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "./db";
 import { SESSION_COOKIE, isValidSession, sessionToken } from "./auth";
-import { coc, enc, type ApiClan, type ApiPlayer } from "./coc";
-import { snapshotPlayerStats, syncAllCwl, syncCwlClan } from "./sync";
+import { coc, enc, type ApiClan } from "./coc";
+import { syncAllCwl, syncCwlClan } from "./sync";
 import { clanBoard, seasonOverview } from "./view";
 import {
   importCwlExport,
@@ -165,46 +165,6 @@ export async function syncAll() {
   });
 }
 
-export async function refreshPlayerStats() {
-  return run(async () => {
-    const r = await snapshotPlayerStats();
-    return { ok: r.ok, message: r.message };
-  });
-}
-
-export async function trackPlayer(rawTag: string) {
-  return run(async () => {
-    const tag = normTag(rawTag);
-    if (!tag) throw new Error("Enter a player tag.");
-    const db = await getDb();
-    let name = "";
-    let clan = "";
-    try {
-      const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
-      name = p.name;
-      clan = p.clan?.name ?? "";
-    } catch (e) {
-      throw new Error(`Could not find ${tag}: ${(e as Error).message}`);
-    }
-    await db
-      .insert(s.players)
-      .values({ tag, name, isTracked: true })
-      .onConflictDoUpdate({ target: s.players.tag, set: { isTracked: true, name, updatedAt: new Date() } });
-    return `Now tracking ${name} (${tag})${clan ? ` from ${clan}` : ""}. Refresh stats to pull their numbers.`;
-  });
-}
-
-export async function setTracked(tag: string, tracked: boolean) {
-  return run(async () => {
-    const db = await getDb();
-    await db
-      .update(s.players)
-      .set({ isTracked: tracked, updatedAt: new Date() })
-      .where(eq(s.players.tag, tag));
-    return tracked ? "Tracking this player." : "No longer tracking this player.";
-  });
-}
-
 // --- bonus board
 
 type PartPatch = Partial<{
@@ -212,6 +172,7 @@ type PartPatch = Partial<{
   transferToTag: string | null;
   attacksOverride: number | null;
   donationsOverride: number | null;
+  leftJpa: boolean;
   remark: string | null;
 }>;
 

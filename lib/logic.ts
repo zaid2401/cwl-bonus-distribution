@@ -76,6 +76,11 @@ export function memberKey(discordId: string | null | undefined, tag: string): st
 
 export const isAlt = (pn: number | null | undefined) => pn != null && pn >= 2;
 
-export function isEligible(p: { attacks: number; pn: number | null; isGuest: boolean }): boolean {
-  return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isGuest;
+export function isEligible(p: {
+  attacks: number;
+  pn: number | null;
+  isGuest: boolean;
+  leftJpa: boolean;
+}): boolean {
+  return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isGuest && !p.leftJpa;
 }

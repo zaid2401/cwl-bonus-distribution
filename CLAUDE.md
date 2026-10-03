@@ -11,9 +11,9 @@ recording CWL bonuses, it does not belong in this app.
 ## The rules it encodes
 
 Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies when they used **7/7
-attacks**, are on their **main account** (PN1; PN2 and up are alts) and are **not a guest**. Among
-those, donations from the **previous game season** decide the order. Nobody is auto-picked: the
-board sorts and flags, Zaid ticks the boxes.
+attacks**, are on their **main account** (PN1; PN2 and up are alts), are **not a guest** and have
+not been ticked **Left JPA** on that season's board. Among those, donations from the **previous game
+season** decide the order. Nobody is auto-picked: the board sorts and flags, Zaid ticks the boxes.
 
 Flags are advisory only, never exclusions:
 
@@ -31,10 +31,9 @@ against that member's history.
 | Path                             | What lives there                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------ |
 | `lib/logic.ts`                   | Bonus rules, war results, star-steal detection. No database.                   |
-| `lib/sync.ts`                    | Clash of Clans API pulls: CWL wars, per-player season donations.               |
+| `lib/sync.ts`                    | Clash of Clans API pulls: CWL wars and rosters.                                |
 | `lib/view.ts`                    | The bonus board and season overview.                                           |
-| `lib/live.ts`                    | Round-by-round attack grid, donation totals for old seasons.                   |
-| `lib/stats.ts`                   | Donations page rows.                                                           |
+| `lib/live.ts`                    | Round-by-round attack grid.                                                    |
 | `lib/imports.ts`                 | Google Sheet imports: history, donations, CWL exports, player links.           |
 | `lib/export.ts`, `lib/sheets.ts` | Season export in the old Combined-sheet layout.                                |
 | `lib/actions.ts`                 | Every server action. All of them go through `run()`, which checks the session. |
@@ -47,10 +46,11 @@ against that member's history.
   use ids like `2026-06` and `2026-06-2`, ordered by `sortKey`.
 - `cwl_clan_seasons.active` says whether a clan is being used for CWL that season. Unticking it
   removes the clan from totals, exports and sync, without touching past seasons.
-- `player_stats` is per player per game season, written by `snapshotPlayerStats()`. Values only grow
-  inside a season, so a player who leaves a clan keeps their numbers.
-- `donations` only holds sheet imports (`clan_tag = 'IMPORT'`) and old clan snapshots. An import
-  always beats the API.
+- `donations` is the only source of donation numbers: sheet imports (`clan_tag = 'IMPORT'`) and the
+  clan snapshots an older version collected. An import always wins. Nothing writes to it from the
+  game API any more, so a season without an import shows zeros.
+- `participants.left_jpa` disqualifies a player for that season only. It is per season on purpose:
+  someone who rejoins starts clean next month.
 - `bonus_history` is keyed by **member**: the Discord ID, or `tag:#TAG` when unlinked.
 
 ## Clash of Clans API gotchas
@@ -60,8 +60,6 @@ against that member's history.
 - CWL war data disappears a few days after the league ends. Sync during or straight after CWL;
   otherwise fall back to importing a ClashPerk `/export cwl` sheet.
 - `attackWins` on a player counts ranked battles only. We do not track multiplayer attacks at all.
-- The clan members endpoint has no per-player detail worth using here, so donations are read one
-  player at a time. That is also what covers tracked players outside the family clans.
 
 ## Commands
 
@@ -103,8 +101,9 @@ memory note on writing code that reads as human-written.
 
 ## Deliberately absent
 
-Multiplayer attack tracking, the Latecomers clan type, and clan-level donation snapshots were all
-removed. Don't bring them back without asking.
+Multiplayer attack tracking, the Latecomers clan type, and every form of live donation tracking (the
+Donations page, `player_stats`, tracked players, the daily snapshot) were all removed. Donations
+arrive by import now. Don't bring any of it back without asking.
 
 Setup and deployment steps (Supabase, Vercel, the API key, the Google service account) live in
 `README.md`.

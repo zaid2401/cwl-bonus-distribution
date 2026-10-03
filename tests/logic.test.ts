@@ -28,12 +28,14 @@ test("bonus count = 6 + wins unless overridden", () => {
   assert.equal(bonusCount(5, 4), 4);
 });
 
-test("eligibility: 7 attacks, main, not guest", () => {
-  assert.equal(isEligible({ attacks: 7, pn: null, isGuest: false }), true);
-  assert.equal(isEligible({ attacks: 7, pn: 1, isGuest: false }), true);
-  assert.equal(isEligible({ attacks: 6, pn: 1, isGuest: false }), false);
-  assert.equal(isEligible({ attacks: 7, pn: 2, isGuest: false }), false);
-  assert.equal(isEligible({ attacks: 7, pn: 1, isGuest: true }), false);
+test("eligibility: 7 attacks, main, not guest, still in the alliance", () => {
+  const base = { attacks: 7, pn: 1, isGuest: false, leftJpa: false };
+  assert.equal(isEligible({ ...base, pn: null }), true);
+  assert.equal(isEligible(base), true);
+  assert.equal(isEligible({ ...base, attacks: 6 }), false);
+  assert.equal(isEligible({ ...base, pn: 2 }), false);
+  assert.equal(isEligible({ ...base, isGuest: true }), false);
+  assert.equal(isEligible({ ...base, leftJpa: true }), false);
 });
 
 test("star steal: only flagged after 8 stars and hitting a lower base", () => {

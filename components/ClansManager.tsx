@@ -57,7 +57,7 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
           </div>
           <label className="flex items-center gap-2 pb-2 text-sm">
             <input type="checkbox" checked={isAlliance} onChange={(e) => setAlliance(e.target.checked)} />{" "}
-            Alliance clan (track donations)
+            Alliance clan
           </label>
           <button className="btn btn-primary" disabled={pending || !tags.trim()} onClick={addAll}>
             {pending ? "Adding…" : "Add"}
@@ -74,7 +74,7 @@ export function ClansManager({ clans }: { clans: Clan[] }) {
               <th className="th">Name</th>
               <th className="th">Tag</th>
               <th className="th">CWL type</th>
-              <th className="th">Alliance (donations)</th>
+              <th className="th">Alliance</th>
               <th className="th"></th>
             </tr>
           </thead>

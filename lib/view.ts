@@ -124,6 +124,7 @@ export interface BoardRow {
   discordUsername: string | null;
   pn: number | null;
   isGuest: boolean;
+  leftJpa: boolean;
   isAlt: boolean;
   memberKey: string;
   history: boolean[]; // aligned with prevSeasons
@@ -250,22 +251,6 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
         imported: false,
       });
   }
-  // Player stats catch anyone who switched clans mid-season. An import still wins.
-  const stats = tags.length
-    ? await db
-        .select()
-        .from(s.playerStats)
-        .where(and(eq(s.playerStats.season, donationSeason), inArray(s.playerStats.playerTag, tags)))
-    : [];
-  for (const st of stats) {
-    const cur = donBy.get(st.playerTag);
-    if (cur?.imported) continue;
-    donBy.set(st.playerTag, {
-      donated: Math.max(cur?.donated ?? 0, st.donated),
-      received: Math.max(cur?.received ?? 0, st.received),
-      imported: false,
-    });
-  }
 
   const prevSeasons = await previousSeasons(db, season);
   const prevIds = prevSeasons.map((p) => p.id);
@@ -319,6 +304,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     const recent = history.filter(Boolean).length;
     const pn = pl?.pn ?? null;
     const isGuest = pl?.isGuest ?? false;
+    const leftJpa = part?.leftJpa ?? false;
 
     let stars = 0;
     for (const a of mine) stars += a.stars;
@@ -341,12 +327,13 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       discordUsername: pl?.discordUsername ?? null,
       pn,
       isGuest,
+      leftJpa,
       isAlt: isAlt(pn),
       memberKey: key,
       history,
       recentBonuses: recent,
       backToBack: recent >= B2B_THRESHOLD,
-      eligible: isEligible({ attacks: counted.attacks, pn, isGuest }),
+      eligible: isEligible({ attacks: counted.attacks, pn, isGuest, leftJpa }),
       selected: part?.selected ?? false,
       recorded: recordedKeys.has(key),
       transferToTag: part?.transferToTag ?? null,

@@ -122,6 +122,9 @@ export function BoardTable(props: {
               <th className="th">Discord</th>
               <th className="th">PN</th>
               <th className="th">Guest</th>
+              <th className="th" title="Left the alliance — no bonus">
+                Left JPA
+              </th>
               <th className="th" title="Oldest → newest">
                 History
               </th>
@@ -206,6 +209,14 @@ export function BoardTable(props: {
                     />
                   </td>
                   <td className="td">
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={r.leftJpa}
+                      onChange={(e) => part(r.tag, { leftJpa: e.target.checked })}
+                    />
+                  </td>
+                  <td className="td">
                     <div className="flex gap-0.5">
                       {history.map((h, hi) => {
                         const got = r.history[r.history.length - 1 - hi];
@@ -253,6 +264,7 @@ export function BoardTable(props: {
                       )}
                       {r.isAlt && <span className="chip bg-panel2 text-muted">alt</span>}
                       {r.isGuest && <span className="chip bg-panel2 text-muted">guest</span>}
+                      {r.leftJpa && <span className="chip bg-bad/15 text-bad">left JPA</span>}
                       {r.attacks < 7 && <span className="chip bg-panel2 text-muted">{r.attacks}/7</span>}
                       {r.selectedElsewhere && (
                         <span
@@ -289,7 +301,7 @@ export function BoardTable(props: {
                 </tr>
                 {editing === r.tag && (
                   <tr>
-                    <td className="td bg-panel2" colSpan={13}>
+                    <td className="td bg-panel2" colSpan={14}>
                       <LinkEditor row={r} onClose={() => setEditing(null)} />
                     </td>
                   </tr>

@@ -235,7 +235,7 @@ export function BoardTable(props: {
                   {canEdit && (
                     <>
                       <td className="td">
-                        <PnCell value={r.pn} onSave={(pn) => exec(() => savePlayer({ tag: r.tag, pn }))} />
+                        <PnCell value={r.pn} onSave={(pn) => part(r.tag, { pn })} />
                       </td>
                       <td className="td">
                         <input

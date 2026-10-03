@@ -47,17 +47,25 @@ COC_API_TOKEN=your-token
 2. At https://vercel.com, click **Add New → Project** and import the repo.
 3. Add these environment variables:
 
-| Name                           | Value                                             |
-| ------------------------------ | ------------------------------------------------- |
-| `ADMIN_PASSWORD`               | your login password                               |
-| `BONUS_PASSWORD`               | the bonus leader's password (optional, see below) |
-| `COC_API_TOKEN`                | CoC API token                                     |
-| `DATABASE_URL`                 | Supabase pooler URI                               |
-| `CRON_SECRET`                  | any long random string                            |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4                                        |
-| `GOOGLE_PRIVATE_KEY`           | see step 4                                        |
+| Name                           | Value                                                     |
+| ------------------------------ | --------------------------------------------------------- |
+| `ADMIN_PASSWORD`               | your login password                                       |
+| `BONUS_PASSWORD`               | the bonus leader's password (optional, see below)         |
+| `COC_API_TOKEN`                | CoC API token                                             |
+| `JPA_API_KEY`                  | clashwithjpa.com API key (Manager scope), for **Sync PN** |
+| `DATABASE_URL`                 | Supabase pooler URI                                       |
+| `CRON_SECRET`                  | any long random string                                    |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | see step 4                                                |
+| `GOOGLE_PRIVATE_KEY`           | see step 4                                                |
 
 4. Deploy. `vercel.json` schedules `/api/cron` daily at 04:30 UTC, just before the season reset at 05:00 UTC on Mondays. Each run syncs CWL.
+
+## Preference numbers
+
+**Sync PN** on a season page reads every CWL application for that season from clashwithjpa.com and
+writes each player's preference number onto that season's boards. A player with no application keeps
+whatever PN the Players page holds for them, and re-syncing overwrites hand edits — the website is
+where PN is decided.
 
 ## A second login for the bonus leader
 

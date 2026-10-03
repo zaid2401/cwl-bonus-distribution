@@ -57,6 +57,7 @@ Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
 | `lib/logic.ts`                   | Bonus rules, war results, star-steal detection. No database.                   |
 | `lib/util.ts`                    | Tag and season helpers: `normTag()`, `cwlSeasonId()`, `currentCwlSeason()`.    |
 | `lib/sync.ts`                    | Clash of Clans API pulls: CWL wars and rosters.                                |
+| `lib/jpa.ts`                     | clashwithjpa.com API: CWL seasons and applications. Read-only.                 |
 | `lib/view.ts`                    | The bonus board and season overview.                                           |
 | `lib/live.ts`                    | Round-by-round attack grid.                                                    |
 | `lib/imports.ts`                 | Google Sheet imports: history, donations, CWL exports, player links.           |
@@ -84,9 +85,26 @@ Leave `BONUS_PASSWORD` unset and the second account simply does not exist.
 - `players.is_alt_account` (the **Alt** tick) and the PN-derived `isAlt()` are different things. The
   tick marks an account that is nobody's main; PN is one member's own ordering. The board shows the
   first as an `alt` chip and the second as `PN2`, `PN3` and so on.
+- `participants.pn` is that season's preference number, synced from the member's CWL
+  application on clashwithjpa.com. The board falls back to `players.pn` when a player has no
+  application, and editing PN on a board writes the season value, not the fallback.
 - `participants.left_jpa` disqualifies a player for that season only. It is per season on purpose:
   someone who rejoins starts clean next month.
 - `bonus_history` is keyed by **member**: the Discord ID, or `tag:#TAG` when unlinked.
+
+## The clashwithjpa.com API
+
+Members apply for CWL on the website and pick their preference number there, so PN is read from
+it rather than typed in twice. `JPA_API_KEY` goes in the `x-api-key` header; Manager scope covers
+everything this app reads. Every response is `{success, data}` or `{success, error}`, which
+`lib/jpa.ts` unwraps.
+
+Their seasons are integer ids with a month name and year; ours are `2026-10`. `matchSeason()`
+pairs them on month and year, and when a month holds two CWLs it pairs them oldest first, so our
+`2026-06-2` finds their "June 2026 2". Applications page 100 at a time — a season is 300-odd.
+
+**Sync PN** overwrites whatever is on the board, hand edits included. That is the point: the
+website is the source of truth for PN.
 
 ## Clash of Clans API gotchas
 

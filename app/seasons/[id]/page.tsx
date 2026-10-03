@@ -10,6 +10,7 @@ import {
   finalizeSeason,
   reopenSeason,
   syncClan,
+  syncPreferenceNumbers,
 } from "@/lib/actions";
 import { seasonGate } from "@/lib/session";
 import { tagSlug } from "@/lib/util";
@@ -75,6 +76,9 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
           )}
           {admin && (
             <>
+              <ActionButton action={syncPreferenceNumbers.bind(null, id)} pendingText="Reading applications…">
+                Sync PN
+              </ActionButton>
               <ActionButton action={exportSeasonToSheet.bind(null, id)} pendingText="Exporting…">
                 Export to Google Sheet
               </ActionButton>

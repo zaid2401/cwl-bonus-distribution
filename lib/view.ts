@@ -287,7 +287,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     const key = memberKey(pl?.discordId, tag);
     const history = prevIds.map((id) => histBy.get(id)?.has(key) ?? false);
     const recent = history.filter(Boolean).length;
-    const pn = pl?.pn ?? null;
+    const pn = part?.pn ?? pl?.pn ?? null;
     const isAltAccount = pl?.isAltAccount ?? false;
     const leftJpa = part?.leftJpa ?? false;
 

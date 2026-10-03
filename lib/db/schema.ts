@@ -129,6 +129,9 @@ export const participants = pgTable(
     playerTag: text("player_tag").notNull(),
     name: text("name"),
     selected: boolean("selected").notNull().default(false),
+    // This season's preference number, synced from clashwithjpa.com. Falls back to
+    // players.pn when the member did not apply through the site.
+    pn: integer("pn"),
     attacksOverride: integer("attacks_override"),
     donationsOverride: integer("donations_override"),
     importedAttacks: integer("imported_attacks"),

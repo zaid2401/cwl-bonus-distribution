@@ -11,7 +11,7 @@ function num(value: number) {
 }
 
 function rowClass(row: BoardRow) {
-  if (row.selected) return "bg-accent/10";
+  if (row.selected) return "picked bg-accent/10";
   if (row.eligible) return "";
   return "opacity-60 hover:opacity-100";
 }
@@ -19,6 +19,11 @@ function rowClass(row: BoardRow) {
 function pickedClass(picked: number, bonuses: number) {
   if (picked === bonuses) return "text-good";
   return picked > bonuses ? "text-bad" : "text-warn";
+}
+
+function pickedNote(picked: number, bonuses: number) {
+  if (picked === bonuses) return "complete";
+  return picked > bonuses ? `over by ${picked - bonuses}` : `${bonuses - picked} left`;
 }
 
 type Filter = "all" | "eligible" | "selected" | "recorded";
@@ -117,7 +122,9 @@ export function BoardTable(props: {
           Picked{" "}
           <b className={pickedClass(picked, props.bonuses)}>
             {picked} / {props.bonuses}
-          </b>
+          </b>{" "}
+          {/* Said in words as well, because the colour on its own is not readable by everyone. */}
+          <span className="text-xs text-muted">· {pickedNote(picked, props.bonuses)}</span>
         </div>
         <BonusCount {...props} />
         <div className="flex gap-1">
@@ -152,8 +159,8 @@ export function BoardTable(props: {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className="th w-8">#</th>
-              <th className="th">Bonus</th>
+              <th className="th pin left-0 w-8">#</th>
+              <th className="th pin left-8">Bonus</th>
               <th className="th">Player</th>
               <th className="th text-right">Attacks</th>
               <th className="th text-right">Donated</th>
@@ -178,14 +185,22 @@ export function BoardTable(props: {
             {visible.map((r, i) => (
               <Fragment key={r.tag}>
                 <tr className={rowClass(r)}>
-                  <td className="td text-xs">
-                    {hintRank.has(r.tag) ? (
-                      <span className="font-bold text-accent">{hintRank.get(r.tag)}</span>
-                    ) : (
-                      <span className="text-muted">{i + 1}</span>
-                    )}
+                  <td className="td pin left-0 text-xs">
+                    {/* Fixed width whatever the number, so the pinned Bonus cell beside it
+                        lands flush instead of leaving a slot for the table to scroll through. */}
+                    <span
+                      className={`inline-block w-4 text-center tabular-nums ${
+                        hintRank.has(r.tag) ? "font-bold text-accent" : "text-muted"
+                      }`}
+                    >
+                      {hintRank.get(r.tag) ?? i + 1}
+                    </span>
                   </td>
-                  <td className="td">
+                  {/* The title sits on the cell: a disabled checkbox shows no tooltip of its own. */}
+                  <td
+                    className="td pin left-8"
+                    title={finalized ? "Season is finalized. Reopen it to change bonuses." : undefined}
+                  >
                     <input
                       type="checkbox"
                       className="size-4 accent-[var(--color-accent)]"
@@ -285,6 +300,15 @@ export function BoardTable(props: {
                 )}
               </Fragment>
             ))}
+            {!visible.length && (
+              <tr>
+                <td className="td text-muted" colSpan={columns}>
+                  {rows.length
+                    ? "Nothing matches that search or filter."
+                    : "No players on this board yet. Sync the clan or import a CWL export."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

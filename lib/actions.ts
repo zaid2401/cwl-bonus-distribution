@@ -367,8 +367,9 @@ export async function applyRecordedBonuses(seasonId: string) {
     const clans = (await seasonOverview(seasonId)).filter((c) => c.active);
     const best = new Map<string, { clanTag: string; playerTag: string; score: number[] }>();
 
-    for (const c of clans) {
-      const board = await clanBoard(seasonId, c.clanTag, db);
+    const boards = await Promise.all(clans.map((c) => clanBoard(seasonId, c.clanTag, db)));
+
+    for (const board of boards) {
       for (const row of board.rows) {
         if (!recorded.has(row.memberKey)) continue;
         const score = [
@@ -380,14 +381,21 @@ export async function applyRecordedBonuses(seasonId: string) {
         ];
         const current = best.get(row.memberKey);
         if (!current || beats(score, current.score)) {
-          best.set(row.memberKey, { clanTag: c.clanTag, playerTag: row.tag, score });
+          best.set(row.memberKey, { clanTag: board.clanTag, playerTag: row.tag, score });
         }
       }
     }
-    for (const pick of best.values())
+    if (best.size)
       await db
         .insert(s.participants)
-        .values({ seasonId, clanTag: pick.clanTag, playerTag: pick.playerTag, selected: true })
+        .values(
+          [...best.values()].map((p) => ({
+            seasonId,
+            clanTag: p.clanTag,
+            playerTag: p.playerTag,
+            selected: true,
+          })),
+        )
         .onConflictDoUpdate({
           target: [s.participants.seasonId, s.participants.clanTag, s.participants.playerTag],
           set: { selected: true },

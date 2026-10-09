@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bonusCount, isEligible, starStealFlags, warResult } from "../lib/logic";
+import {
+  bonusCount,
+  compareBoardRows,
+  countAttacks,
+  isEligible,
+  starStealFlags,
+  warResult,
+  type SortableRow,
+} from "../lib/logic";
 import { cwlSeasonId, gameSeasonAt, guessSeasonFromHeader, normTag, prevMonth } from "../lib/util";
 import { parseCsv } from "../lib/csv";
 
@@ -85,4 +93,55 @@ test("csv parser handles quotes and newlines", () => {
     ["a", "b,c", 'd "e"'],
     ["1", "x\ny", "3"],
   ]);
+});
+
+test("attacks: an override wins, then the API, then the sheet", () => {
+  assert.deepEqual(countAttacks(3, 7, 5), { attacks: 3, source: "override" });
+  assert.deepEqual(countAttacks(null, 7, 5), { attacks: 7, source: "api" });
+  assert.deepEqual(countAttacks(null, null, 5), { attacks: 5, source: "import" });
+  assert.deepEqual(countAttacks(null, null, null), { attacks: 0, source: "none" });
+  // A real zero from the API is not the same as no API data at all.
+  assert.deepEqual(countAttacks(null, 0, 5), { attacks: 0, source: "api" });
+  assert.deepEqual(countAttacks(0, 7, 5), { attacks: 0, source: "override" });
+});
+
+test("board order: eligible first, then donations, and blanks last", () => {
+  const row = (p: Partial<SortableRow>): SortableRow => ({
+    eligible: true,
+    attacks: 7,
+    donated: 0,
+    received: 0,
+    name: "x",
+    ...p,
+  });
+  const sorted = (rows: SortableRow[]) => [...rows].sort(compareBoardRows).map((r) => r.name);
+
+  assert.deepEqual(
+    sorted([row({ name: "out", eligible: false }), row({ name: "in" })]),
+    ["in", "out"],
+    "eligible beats everything",
+  );
+  assert.deepEqual(sorted([row({ name: "low", donated: 10 }), row({ name: "high", donated: 900 })]), [
+    "high",
+    "low",
+  ]);
+  assert.deepEqual(
+    sorted([row({ name: "none", donated: null }), row({ name: "zero", donated: 0 })]),
+    ["zero", "none"],
+    "nobody the sheet mentions sits below someone it does not",
+  );
+  assert.deepEqual(
+    sorted([
+      row({ name: "fewer", eligible: false, attacks: 2 }),
+      row({ name: "more", eligible: false, attacks: 6 }),
+    ]),
+    ["more", "fewer"],
+    "ineligible players sort by attacks, not donations",
+  );
+  assert.deepEqual(
+    sorted([row({ name: "b", received: 1 }), row({ name: "a", received: 9 })]),
+    ["a", "b"],
+    "equal donations break on received",
+  );
+  assert.deepEqual(sorted([row({ name: "Zed" }), row({ name: "Abe" })]), ["Abe", "Zed"]);
 });

@@ -84,3 +84,32 @@ export function isEligible(p: {
 }): boolean {
   return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isAltAccount && !p.leftJpa;
 }
+
+// An override beats the API, and the API beats whatever a sheet said.
+export function countAttacks(override: number | null, fromApi: number | null, imported: number | null) {
+  if (override != null) return { attacks: override, source: "override" as const };
+  if (fromApi != null) return { attacks: fromApi, source: "api" as const };
+  if (imported != null) return { attacks: imported, source: "import" as const };
+  return { attacks: 0, source: "none" as const };
+}
+
+// Only the fields the order depends on, so this stays testable without a board row.
+export interface SortableRow {
+  eligible: boolean;
+  attacks: number;
+  donated: number | null;
+  received: number | null;
+  name: string;
+}
+
+// Eligible players first, ordered by donations. Everyone else falls in behind them by
+// attacks, and anyone the sheet does not mention sits below anyone it does.
+export function compareBoardRows(a: SortableRow, b: SortableRow) {
+  if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+  if (!a.eligible && a.attacks !== b.attacks) return b.attacks - a.attacks;
+  const donated = (b.donated ?? -1) - (a.donated ?? -1);
+  if (donated) return donated;
+  const received = (b.received ?? -1) - (a.received ?? -1);
+  if (received) return received;
+  return a.name.localeCompare(b.name);
+}

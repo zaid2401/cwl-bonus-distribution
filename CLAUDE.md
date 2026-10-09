@@ -102,6 +102,10 @@ Two passwords on the public internet are the whole of the front door, so:
 | `lib/session.ts`                 | What pages ask for the current role. Uses `next/headers`, so not in the proxy. |
 | `app/`, `components/`            | Next.js 16 App Router pages and client components.                             |
 
+`clanBoard()` runs its queries in three waves, and `seasonOverview()` builds one board per
+clan at once. Keep both that way: a round trip to Supabase is the expensive part, and the
+season page used to make a hundred of them in a row.
+
 ## Data model notes
 
 - **Seasons are keyed by month** (`2026-09`). The API reports a league group's _start date_, and

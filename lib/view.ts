@@ -1,9 +1,11 @@
-import { and, asc, desc, eq, inArray, isNotNull, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import {
   B2B_THRESHOLD,
   B2B_WINDOW,
   bonusCount,
+  compareBoardRows,
+  countAttacks,
   isAlt,
   isEligible,
   memberKey,
@@ -83,27 +85,29 @@ export async function seasonOverview(seasonId: string): Promise<ClanSummary[]> {
     .where(eq(s.cwlClanSeasons.seasonId, seasonId))
     .orderBy(asc(s.clans.sortOrder), asc(s.cwlClanSeasons.clanName));
 
-  const out: ClanSummary[] = [];
-  for (const { cs, clan } of rows) {
-    const board = await clanBoard(seasonId, cs.clanTag, db);
-    out.push({
-      clanTag: cs.clanTag,
-      clanName: board.clanName,
-      active: cs.active,
-      wins: board.wins,
-      losses: board.losses,
-      ties: board.ties,
-      roundsEnded: board.roundsEnded,
-      bonuses: board.bonuses,
-      bonusOverride: cs.bonusOverride,
-      selected: board.rows.filter((r) => r.selected).length,
-      eligible: board.rows.filter((r) => r.eligible).length,
-      recorded: board.rows.filter((r) => r.recorded).length,
-      lastSyncedAt: cs.lastSyncedAt,
-      syncMessage: cs.syncMessage,
-    });
-  }
-  return out;
+  // One board per clan, and each board is a dozen queries, so they go together. The
+  // connection pool caps how many actually run at once.
+  return Promise.all(
+    rows.map(async ({ cs }) => {
+      const board = await clanBoard(seasonId, cs.clanTag, db);
+      return {
+        clanTag: cs.clanTag,
+        clanName: board.clanName,
+        active: cs.active,
+        wins: board.wins,
+        losses: board.losses,
+        ties: board.ties,
+        roundsEnded: board.roundsEnded,
+        bonuses: board.bonuses,
+        bonusOverride: cs.bonusOverride,
+        selected: board.rows.filter((r) => r.selected).length,
+        eligible: board.rows.filter((r) => r.eligible).length,
+        recorded: board.rows.filter((r) => r.recorded).length,
+        lastSyncedAt: cs.lastSyncedAt,
+        syncMessage: cs.syncMessage,
+      };
+    }),
+  );
 }
 
 export interface BoardRow {
@@ -157,57 +161,53 @@ export interface Board {
   syncMessage: string | null;
 }
 
-function countAttacks(override: number | null, fromApi: number | null, imported: number | null) {
-  if (override != null) return { attacks: override, source: "override" as const };
-  if (fromApi != null) return { attacks: fromApi, source: "api" as const };
-  if (imported != null) return { attacks: imported, source: "import" as const };
-  return { attacks: 0, source: "none" as const };
-}
-
-// Eligible players first, ordered by donations. Everyone else falls in behind them by
-// attacks, and anyone the sheet does not mention sits below anyone it does.
-function compareBoardRows(a: BoardRow, b: BoardRow) {
-  if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
-  if (!a.eligible && a.attacks !== b.attacks) return b.attacks - a.attacks;
-  const donated = (b.donated ?? -1) - (a.donated ?? -1);
-  if (donated) return donated;
-  const received = (b.received ?? -1) - (a.received ?? -1);
-  if (received) return received;
-  return a.name.localeCompare(b.name);
-}
-
 export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): Promise<Board> {
   const db = dbIn ?? (await getDb());
-  const [season] = await db.select().from(s.seasons).where(eq(s.seasons.id, seasonId));
+  // Three waves, not thirteen round trips: everything that depends on nothing goes first,
+  // then what needs the war tags, then what needs the player tags.
+  const [[season], [cs], [clan], rec, roster, parts, recordedRows, otherSelected] = await Promise.all([
+    db.select().from(s.seasons).where(eq(s.seasons.id, seasonId)),
+    db
+      .select()
+      .from(s.cwlClanSeasons)
+      .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.clanTag, clanTag))),
+    db.select().from(s.clans).where(eq(s.clans.tag, clanTag)),
+    clanRecord(db, seasonId, clanTag),
+    db
+      .select()
+      .from(s.cwlRoster)
+      .where(and(eq(s.cwlRoster.seasonId, seasonId), eq(s.cwlRoster.clanTag, clanTag))),
+    db
+      .select()
+      .from(s.participants)
+      .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.clanTag, clanTag))),
+    // Already in history for this season: imported, or from an earlier finalize.
+    db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId)),
+    // Picks in other clans, so we can warn about giving one member two bonuses.
+    db
+      .select({ p: s.participants, pl: s.players })
+      .from(s.participants)
+      .leftJoin(s.players, eq(s.players.tag, s.participants.playerTag))
+      .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.selected, true))),
+  ]);
   if (!season) throw new Error(`Season ${seasonId} not found`);
-  const [cs] = await db
-    .select()
-    .from(s.cwlClanSeasons)
-    .where(and(eq(s.cwlClanSeasons.seasonId, seasonId), eq(s.cwlClanSeasons.clanTag, clanTag)));
-  const [clan] = await db.select().from(s.clans).where(eq(s.clans.tag, clanTag));
-  const rec = await clanRecord(db, seasonId, clanTag);
-  const warTags = rec.wars.map((w) => w.warTag);
 
-  const roster = await db
-    .select()
-    .from(s.cwlRoster)
-    .where(and(eq(s.cwlRoster.seasonId, seasonId), eq(s.cwlRoster.clanTag, clanTag)));
-  const warMembers = warTags.length
-    ? await db
-        .select()
-        .from(s.cwlWarMembers)
-        .where(and(inArray(s.cwlWarMembers.warTag, warTags), eq(s.cwlWarMembers.clanTag, clanTag)))
-    : [];
-  const attacks = warTags.length
-    ? await db
-        .select()
-        .from(s.cwlAttacks)
-        .where(and(inArray(s.cwlAttacks.warTag, warTags), eq(s.cwlAttacks.clanTag, clanTag)))
-    : [];
-  const parts = await db
-    .select()
-    .from(s.participants)
-    .where(and(eq(s.participants.seasonId, seasonId), eq(s.participants.clanTag, clanTag)));
+  const warTags = rec.wars.map((w) => w.warTag);
+  const [warMembers, attacks, prevSeasons] = await Promise.all([
+    warTags.length
+      ? db
+          .select()
+          .from(s.cwlWarMembers)
+          .where(and(inArray(s.cwlWarMembers.warTag, warTags), eq(s.cwlWarMembers.clanTag, clanTag)))
+      : [],
+    warTags.length
+      ? db
+          .select()
+          .from(s.cwlAttacks)
+          .where(and(inArray(s.cwlAttacks.warTag, warTags), eq(s.cwlAttacks.clanTag, clanTag)))
+      : [],
+    previousSeasons(db, season),
+  ]);
 
   const names = new Map<string, { name: string; th: number | null }>();
   for (const r of roster) names.set(r.playerTag, { name: r.name, th: r.townhall });
@@ -217,55 +217,35 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     if (!names.has(p.playerTag)) names.set(p.playerTag, { name: p.name ?? "", th: null });
   const tags = [...names.keys()];
 
-  const playerRows = tags.length ? await db.select().from(s.players).where(inArray(s.players.tag, tags)) : [];
-  const playerBy = new Map(playerRows.map((p) => [p.tag, p]));
-
   // Donations come from the sheet imported for that game season and nowhere else. No
   // import, no numbers — a blank column is honest, a zero is not.
   const donationSeason = season.donationSeason ?? "";
-  const dons = tags.length
-    ? await db
-        .select()
-        .from(s.donations)
-        .where(
-          and(
-            eq(s.donations.season, donationSeason),
-            eq(s.donations.clanTag, "IMPORT"),
-            inArray(s.donations.playerTag, tags),
-          ),
-        )
-    : [];
-  const donBy = new Map(dons.map((d) => [d.playerTag, d]));
-
-  const prevSeasons = await previousSeasons(db, season);
   const prevIds = prevSeasons.map((p) => p.id);
-  const hist = prevIds.length
-    ? await db.select().from(s.bonusHistory).where(inArray(s.bonusHistory.seasonId, prevIds))
-    : [];
-  // Already in history for this season: imported, or from an earlier finalize.
-  const recordedKeys = new Set(
-    (await db.select().from(s.bonusHistory).where(eq(s.bonusHistory.seasonId, seasonId))).map(
-      (h) => h.memberKey,
-    ),
-  );
+  const [playerRows, dons, hist] = await Promise.all([
+    tags.length ? db.select().from(s.players).where(inArray(s.players.tag, tags)) : [],
+    tags.length
+      ? db
+          .select()
+          .from(s.donations)
+          .where(
+            and(
+              eq(s.donations.season, donationSeason),
+              eq(s.donations.clanTag, "IMPORT"),
+              inArray(s.donations.playerTag, tags),
+            ),
+          )
+      : [],
+    prevIds.length ? db.select().from(s.bonusHistory).where(inArray(s.bonusHistory.seasonId, prevIds)) : [],
+  ]);
+  const playerBy = new Map(playerRows.map((p) => [p.tag, p]));
+  const donBy = new Map(dons.map((d) => [d.playerTag, d]));
+  const recordedKeys = new Set(recordedRows.map((h) => h.memberKey));
   const histBy = new Map<string, Set<string>>();
   for (const h of hist) {
     if (!histBy.has(h.seasonId)) histBy.set(h.seasonId, new Set());
     histBy.get(h.seasonId)!.add(h.memberKey);
   }
 
-  // Picks in other clans, so we can warn about giving one member two bonuses.
-  const otherSelected = await db
-    .select({ p: s.participants, pl: s.players })
-    .from(s.participants)
-    .leftJoin(s.players, eq(s.players.tag, s.participants.playerTag))
-    .where(
-      and(
-        eq(s.participants.seasonId, seasonId),
-        eq(s.participants.selected, true),
-        isNotNull(s.participants.clanTag),
-      ),
-    );
   const selectedByMember = new Map<string, string>();
   for (const { p, pl } of otherSelected) {
     if (p.clanTag === clanTag) continue;

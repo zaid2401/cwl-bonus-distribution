@@ -15,8 +15,10 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
   const goldRows: number[] = [];
   let header: string[] | null = null;
 
-  for (const c of clans) {
-    const board = await clanBoard(seasonId, c.clanTag, db);
+  // The export is the slowest thing in the app and it was one clan at a time.
+  const boards = await Promise.all(clans.map((c) => clanBoard(seasonId, c.clanTag, db)));
+
+  for (const board of boards) {
     if (!header) {
       header = [
         "Name",

@@ -6,7 +6,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { syncClan } from "@/lib/actions";
 import { seasonGate } from "@/lib/session";
 import { slugTag } from "@/lib/util";
-import { B2B_THRESHOLD, B2B_WINDOW } from "@/lib/logic";
+import { B2B_THRESHOLD, B2B_WINDOW, STEAL_MARGIN } from "@/lib/logic";
 
 export const dynamic = "force-dynamic";
 
@@ -69,9 +69,9 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
       <div className="text-xs text-muted">
         <b>Eligible</b> = 7/7 attacks, PN1 main account, not ticked Alt, not ticked Left JPA. An <b>excuse</b>{" "}
         stands in for the attacks — nothing else — and says why. <b>B2B</b> = bonus in {B2B_THRESHOLD}+ of the
-        last {B2B_WINDOW} seasons (flag only). <b>Star steal</b> = attacked a lower base after already having
-        8★. Numbers in gold = top donors among eligible players up to the bonus count (a hint only — you
-        decide).
+        last {B2B_WINDOW} seasons (flag only). <b>Star steal</b> = attacked a base {STEAL_MARGIN + 1}+ places
+        lower after already having 8★. Numbers in gold = top donors among eligible players up to the bonus
+        count (a hint only — you decide).
       </div>
     </div>
   );

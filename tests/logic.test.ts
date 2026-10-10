@@ -46,7 +46,7 @@ test("eligibility: 7 attacks, main, not an alt, still in the alliance", () => {
   assert.equal(isEligible({ ...base, leftJpa: true }), false);
 });
 
-test("star steal: only flagged after 8 stars and hitting a lower base", () => {
+test("star steal: only past 8 stars, and only well below their own position", () => {
   const a = (round: number, def: number, stars: number, pos = 5) => ({
     round,
     order: 1,
@@ -62,8 +62,13 @@ test("star steal: only flagged after 8 stars and hitting a lower base", () => {
     flags.map((f) => [f.round, f.starsBefore]),
     [[4, 9]],
   );
-  // exactly 8 counts too
-  assert.equal(starStealFlags([a(1, 1, 3), a(2, 1, 3), a(3, 1, 2), a(4, 6, 3)]).length, 1);
+  // exactly 8 counts too, and #5 hitting #9 is two clear of the margin
+  const eight = [a(1, 1, 3), a(2, 1, 3), a(3, 1, 2)];
+  assert.equal(starStealFlags([...eight, a(4, 9, 3)]).length, 1);
+  // the margin: at #5, both #6 and #7 are a fair fight, #8 is not
+  assert.equal(starStealFlags([...eight, a(4, 6, 3)]).length, 0);
+  assert.equal(starStealFlags([...eight, a(4, 7, 3)]).length, 0);
+  assert.equal(starStealFlags([...eight, a(4, 8, 3)]).length, 1);
 });
 
 test("season helpers", () => {

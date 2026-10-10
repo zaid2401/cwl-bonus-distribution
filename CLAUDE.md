@@ -29,8 +29,9 @@ ticks the boxes.
 Flags are advisory only, never exclusions:
 
 - **B2B** — a bonus in 3 or more of the last 6 seasons.
-- **Star steal** — after a player passes 8 stars, any hit on a base numbered below their own war
-  position.
+- **Star steal** — after a player passes 8 stars, a hit on a base more than `STEAL_MARGIN` (2)
+  places below their own war position. At #5 that is #8 and down: #6 and #7 are close enough to
+  be a fair fight.
 
 `Flags` in `BoardTable.tsx` renders them worst first — disqualifier, then something to look at,
 then plain facts — as `.flag` pills with their own dot and border, so four on one row still read

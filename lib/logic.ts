@@ -1,6 +1,9 @@
 export const BASE_BONUS = 6;
 export const REQUIRED_ATTACKS = 7;
 export const STAR_REQUIREMENT = 8;
+// How far below their own position a player may still hit without it counting as farming.
+// Bases a place or two down are a fair fight; the flag is for the ones well beneath them.
+export const STEAL_MARGIN = 2;
 export const B2B_WINDOW = 6;
 export const B2B_THRESHOLD = 3;
 
@@ -49,14 +52,15 @@ export interface StarStealFlag {
   starsBefore: number;
 }
 
-// Star stealing: once a player has their 8 stars, hitting a base below their own
-// war position (a bigger number) is a farm hit, not a real attack.
+// Star stealing: once a player has their 8 stars, hitting a base well below their own war
+// position (a bigger number) is a farm hit, not a real attack. At #5 that means #8 and
+// down — #6 and #7 are inside the margin and pass without comment.
 export function starStealFlags(attacks: AttackRow[]): StarStealFlag[] {
   const sorted = [...attacks].sort((a, b) => a.round - b.round || a.order - b.order);
   const flags: StarStealFlag[] = [];
   let total = 0;
   for (const a of sorted) {
-    if (total >= STAR_REQUIREMENT && a.defenderPosition > a.attackerPosition) {
+    if (total >= STAR_REQUIREMENT && a.defenderPosition > a.attackerPosition + STEAL_MARGIN) {
       flags.push({
         round: a.round,
         attackerPosition: a.attackerPosition,

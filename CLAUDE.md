@@ -17,6 +17,11 @@ Bonuses per clan = **6 + war wins**, overridable by hand. A player qualifies whe
 - **Alt** not ticked on the player,
 - **Left JPA** not ticked on that season's board.
 
+An **excuse** on `participants.excuse` stands in for the attacks and only the attacks: a written
+reason why someone who missed a war still qualifies. The other three cannot be excused, because
+nobody has a genuine reason for being an alt or for having left. The reason is the whole record,
+so there is no separate tick — text in that column is the excuse, clearing it takes it back.
+
 Among those, donations from the **previous game season** decide the order, and those only exist once
 the sheet for that season has been imported. Nobody is auto-picked: the board sorts and flags, Zaid
 ticks the boxes.
@@ -48,9 +53,10 @@ immediately. Three layers hold that:
   `/attacks` page inside it.
 - `seasonGate()` in `lib/session.ts` sends it back for any season but the newest, and tells the page
   whether to render admin controls. Pages pass that down as `canEdit`.
-- The board drops the PN, Alt and Left JPA columns for that account — 9 columns against 12 — and
-  every remaining control is inert bar the Bonus checkbox. The state those columns set is still
-  visible in **Flags**, which is the point: they read it, they just cannot change it.
+- The board drops the PN, Alt, Left JPA and Excuse columns for that account — 9 columns against
+  13 — and every remaining control is inert bar the Bonus checkbox. The state those columns set
+  is still visible in **Flags**, which is the point: they read it, they just cannot change it. An
+  excused player carries the reason there, so the second leader sees that it was allowed and why.
 - `run()` in `lib/actions.ts` takes the role an action needs, defaulting to admin.
   `updateParticipant` asks for "bonus" only when the patch is exactly `{ selected }` — anything else
   in it, even alongside `selected`, is an admin edit. **Hiding a control is not refusing a write**:
@@ -127,6 +133,9 @@ season page used to make a hundred of them in a row.
 - `participants.pn` is that season's preference number, synced from the member's CWL
   application on clashwithjpa.com. The board falls back to `players.pn` when a player has no
   application, and editing PN on a board writes the season value, not the fallback.
+- `participants.excuse` is per season and free text, and it is the one free-text field in the
+  app — not the old player remarks, which are gone for good. An empty string is not an excuse;
+  `clanBoard()` trims it to `null` so a stray space cannot make somebody eligible.
 - `participants.left_jpa` disqualifies a player for that season only. It is per season on purpose:
   someone who rejoins starts clean next month.
 - `bonus_history` is keyed by **member**: the Discord ID, or `tag:#TAG` when unlinked.
@@ -232,9 +241,10 @@ memory note on writing code that reads as human-written.
 ## Deliberately absent
 
 Multiplayer attack tracking, the Latecomers clan type, the alliance/CWL clan split, bonus transfers
-to an alt, free-text remarks on a player, a **Sync PN button**, a **GitHub Actions job** for the same
-sync (both blocked by Cloudflare, see above), and every form of live donation tracking (the Donations
-page, `player_stats`, tracked players, the daily snapshot) were all removed. Donations arrive by
+to an alt, free-text remarks on a player (the per-season **excuse** is not that — see the rules
+above), a **Sync PN button**, a **GitHub Actions job** for the same sync (both blocked by
+Cloudflare, see above), and every form of live donation tracking (the Donations page,
+`player_stats`, tracked players, the daily snapshot) were all removed. Donations arrive by
 import now. A bonus is recorded against the account that was ticked, under that member's key. Don't
 bring any of it back without asking.
 

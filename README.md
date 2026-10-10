@@ -82,8 +82,9 @@ through.
 
 Set `BONUS_PASSWORD` to anything you like and give it to the leader who hands out bonuses. Signing in
 with it opens the current season and its clan boards, read-only, with one exception: the **Bonus**
-checkbox. The PN, Alt and Left JPA columns are not even shown — they read that state off the
-**Flags** column instead. They cannot touch clans, players, imports, settings, live attacks, attack
+checkbox. The PN, Alt, Left JPA and Excuse columns are not even shown — they read that state off
+the **Flags** column instead, including the reason when you have excused somebody's missed
+attacks. They cannot touch clans, players, imports, settings, live attacks, attack
 or donation numbers, Discord links, sync, export, finalize or any other season.
 
 It is the same database, so their picks show up on your side the moment they tick a box. Changing

@@ -80,6 +80,16 @@ test("season helpers", () => {
   assert.equal(normTag(" #2pp o "), "#2PP0");
 });
 
+test("an excuse stands in for the attacks and nothing else", () => {
+  const base = { attacks: 3, pn: 1, isAltAccount: false, leftJpa: false };
+  assert.equal(isEligible(base), false);
+  assert.equal(isEligible({ ...base, excused: true }), true);
+  // The other three are not things you can have a genuine reason for.
+  assert.equal(isEligible({ ...base, excused: true, pn: 2 }), false);
+  assert.equal(isEligible({ ...base, excused: true, isAltAccount: true }), false);
+  assert.equal(isEligible({ ...base, excused: true, leftJpa: true }), false);
+});
+
 test("CWL season id is keyed by month, whatever start date the API reports", () => {
   // groups start on different days, so clans report different season strings
   assert.equal(cwlSeasonId("2026-09-01"), "2026-09");

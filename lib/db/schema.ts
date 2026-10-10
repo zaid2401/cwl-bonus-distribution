@@ -137,6 +137,9 @@ export const participants = pgTable(
     importedAttacks: integer("imported_attacks"),
     // Ticked when the player has left the alliance: they keep their row but lose the bonus.
     leftJpa: boolean("left_jpa").notNull().default(false),
+    // Why this player counts as eligible without a full set of attacks. The reason is the
+    // whole point, so there is no separate tick: a reason here is the excuse.
+    excuse: text("excuse"),
   },
   (t) => [primaryKey({ columns: [t.seasonId, t.clanTag, t.playerTag] })],
 );

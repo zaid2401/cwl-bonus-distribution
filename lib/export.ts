@@ -40,6 +40,7 @@ export async function buildSeasonExport(seasonId: string): Promise<SheetExport> 
       if (r.pn != null) remarks.push(`PN${r.pn}`);
       if (r.isAltAccount) remarks.push("Alt");
       if (r.leftJpa) remarks.push("Left JPA");
+      if (r.excuse) remarks.push(`Excused: ${r.excuse}`);
       const idx = rows.length;
       rows.push([
         r.name,

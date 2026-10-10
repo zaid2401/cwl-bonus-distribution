@@ -107,7 +107,7 @@ export default async function SeasonPage(props: PageProps<"/seasons/[id]">) {
               <th className="th">W / L / T</th>
               <th className="th">Bonuses</th>
               <th className="th">Picked</th>
-              <th className="th">Eligible (7/7, main, member)</th>
+              <th className="th">Eligible (7/7 or excused, main, member)</th>
               <th className="th">In history</th>
               <th className="th">Last sync</th>
               <th className="th"></th>

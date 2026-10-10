@@ -67,10 +67,11 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
       />
 
       <div className="text-xs text-muted">
-        <b>Eligible</b> = 7/7 attacks, PN1 main account, not ticked Alt, not ticked Left JPA. <b>B2B</b> =
-        bonus in {B2B_THRESHOLD}+ of the last {B2B_WINDOW} seasons (flag only). <b>Star steal</b> = attacked a
-        lower base after already having 8★. Numbers in gold = top donors among eligible players up to the
-        bonus count (a hint only — you decide).
+        <b>Eligible</b> = 7/7 attacks, PN1 main account, not ticked Alt, not ticked Left JPA. An <b>excuse</b>{" "}
+        stands in for the attacks — nothing else — and says why. <b>B2B</b> = bonus in {B2B_THRESHOLD}+ of the
+        last {B2B_WINDOW} seasons (flag only). <b>Star steal</b> = attacked a lower base after already having
+        8★. Numbers in gold = top donors among eligible players up to the bonus count (a hint only — you
+        decide).
       </div>
     </div>
   );

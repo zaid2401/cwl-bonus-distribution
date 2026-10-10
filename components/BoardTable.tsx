@@ -53,6 +53,7 @@ function searchText(r: BoardRow) {
     r.isAlt && "pn2+",
     r.isAltAccount && "alt",
     r.leftJpa && "left jpa",
+    r.excuse && `excused ${r.excuse}`,
     r.selectedElsewhere && `picked elsewhere ${r.selectedElsewhere}`,
   ];
   return bits.filter(Boolean).join(" ").toLowerCase();
@@ -71,7 +72,7 @@ export function BoardTable(props: {
 }) {
   const { canEdit, seasonId, clanTag, finalized, rows } = props;
   // The bonus leader reads the flags instead of the columns that set them.
-  const columns = canEdit ? 12 : 9;
+  const columns = canEdit ? 13 : 9;
   const { pending, result, exec } = useAction();
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<string | null>(null);
@@ -173,6 +174,9 @@ export function BoardTable(props: {
                   <th className="th" title="Left the alliance — no bonus">
                     Left JPA
                   </th>
+                  <th className="th" title="Eligible despite missing attacks, and why">
+                    Excuse
+                  </th>
                 </>
               )}
               <th className="th" title="Oldest → newest">
@@ -269,6 +273,9 @@ export function BoardTable(props: {
                           checked={r.leftJpa}
                           onChange={(e) => part(r.tag, { leftJpa: e.target.checked })}
                         />
+                      </td>
+                      <td className="td">
+                        <ExcuseCell value={r.excuse} onSave={(v) => part(r.tag, { excuse: v })} />
                       </td>
                     </>
                   )}
@@ -465,6 +472,13 @@ function Flags({ row, seasons }: { row: BoardRow; seasons: number }) {
       tone: "warn",
       title: "Short of a full set of attacks",
     });
+  if (row.excuse)
+    flags.push({
+      key: "excuse",
+      label: `excused · ${row.excuse.length > 28 ? row.excuse.slice(0, 27) + "…" : row.excuse}`,
+      tone: "good",
+      title: `Eligible without 7/7 attacks: ${row.excuse}`,
+    });
   if (row.backToBack)
     flags.push({
       key: "b2b",
@@ -491,6 +505,48 @@ function Flags({ row, seasons }: { row: BoardRow; seasons: number }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// Click to write the reason, same as the number cells above. Clearing the box takes the
+// excuse back, because a blank reason is not an excuse.
+function ExcuseCell({ value, onSave }: { value: string | null; onSave: (v: string | null) => void }) {
+  const [edit, setEdit] = useState(false);
+  const [val, setVal] = useState("");
+  if (edit)
+    return (
+      <input
+        autoFocus
+        className="input w-56 py-0.5"
+        value={val}
+        placeholder="Why they are eligible anyway"
+        maxLength={200}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        onBlur={() => {
+          setEdit(false);
+          const reason = val.trim() || null;
+          if (reason !== value) onSave(reason);
+        }}
+      />
+    );
+  return (
+    <button
+      className={value ? "flag flag-good" : "btn btn-sm px-1.5 text-muted"}
+      title={
+        value
+          ? `${value}
+
+Click to edit, clear the box to remove`
+          : "Excuse a missed attack, with a reason"
+      }
+      onClick={() => {
+        setVal(value ?? "");
+        setEdit(true);
+      }}
+    >
+      {value ? "excused" : "+"}
+    </button>
   );
 }
 

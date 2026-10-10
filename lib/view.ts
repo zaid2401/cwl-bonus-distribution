@@ -129,6 +129,7 @@ export interface BoardRow {
   pn: number | null;
   isAltAccount: boolean;
   leftJpa: boolean;
+  excuse: string | null;
   isAlt: boolean;
   memberKey: string;
   history: boolean[]; // aligned with prevSeasons
@@ -270,6 +271,7 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
     const pn = part?.pn ?? pl?.pn ?? null;
     const isAltAccount = pl?.isAltAccount ?? false;
     const leftJpa = part?.leftJpa ?? false;
+    const excuse = part?.excuse?.trim() || null;
 
     let stars = 0;
     for (const a of mine) stars += a.stars;
@@ -293,12 +295,13 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       pn,
       isAltAccount,
       leftJpa,
+      excuse,
       isAlt: isAlt(pn),
       memberKey: key,
       history,
       recentBonuses: recent,
       backToBack: recent >= B2B_THRESHOLD,
-      eligible: isEligible({ attacks: counted.attacks, pn, isAltAccount, leftJpa }),
+      eligible: isEligible({ attacks: counted.attacks, pn, isAltAccount, leftJpa, excused: !!excuse }),
       selected: part?.selected ?? false,
       recorded: recordedKeys.has(key),
       selectedElsewhere: selectedByMember.get(key) ?? null,

@@ -194,6 +194,7 @@ type PartPatch = Partial<{
   attacksOverride: number | null;
   donationsOverride: number | null;
   leftJpa: boolean;
+  excuse: string | null;
 }>;
 
 export async function updateParticipant(

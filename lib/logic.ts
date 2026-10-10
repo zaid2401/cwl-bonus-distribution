@@ -76,13 +76,17 @@ export function memberKey(discordId: string | null | undefined, tag: string): st
 
 export const isAlt = (pn: number | null | undefined) => pn != null && pn >= 2;
 
+// An excuse covers the attacks and nothing else. You can have a genuine reason for missing a
+// war; you cannot have one for being somebody's alt or for having left the alliance.
 export function isEligible(p: {
   attacks: number;
   pn: number | null;
   isAltAccount: boolean;
   leftJpa: boolean;
+  excused?: boolean;
 }): boolean {
-  return p.attacks >= REQUIRED_ATTACKS && !isAlt(p.pn) && !p.isAltAccount && !p.leftJpa;
+  const attacked = p.attacks >= REQUIRED_ATTACKS || !!p.excused;
+  return attacked && !isAlt(p.pn) && !p.isAltAccount && !p.leftJpa;
 }
 
 // An override beats the API, and the API beats whatever a sheet said.

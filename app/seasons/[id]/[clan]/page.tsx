@@ -63,7 +63,11 @@ export default async function ClanBoardPage(props: PageProps<"/seasons/[id]/[cla
         bonusOverride={board.bonusOverride}
         autoBonuses={6 + board.wins}
         prevSeasons={board.prevSeasons.map((p) => ({ id: p.id, label: p.label }))}
-        rows={board.rows}
+        // Admin only means not sent at all, not merely not drawn: the rows are serialised
+        // into the page, so the clan comes out of them before the bonus account sees any.
+        rows={
+          admin ? board.rows : board.rows.map((r) => ({ ...r, currentClanTag: null, currentClanName: null }))
+        }
       />
 
       <div className="text-xs text-muted">

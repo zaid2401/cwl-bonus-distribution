@@ -17,6 +17,10 @@ export const players = pgTable(
     // 1 = main account, 2 and up are alts.
     pn: integer("pn"),
     isAltAccount: boolean("is_alt_account").notNull().default(false),
+    // Where they are right now, filled in by the clan sync. Null means we do not know:
+    // either nothing has synced yet, or they are in a clan this app does not track.
+    currentClanTag: text("current_clan_tag"),
+    currentClanName: text("current_clan_name"),
     notes: text("notes"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

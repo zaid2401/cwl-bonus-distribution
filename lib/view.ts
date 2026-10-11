@@ -129,6 +129,8 @@ export interface BoardRow {
   pn: number | null;
   isAltAccount: boolean;
   leftJpa: boolean;
+  currentClanTag: string | null;
+  currentClanName: string | null;
   excuse: string | null;
   isAlt: boolean;
   memberKey: string;
@@ -295,6 +297,8 @@ export async function clanBoard(seasonId: string, clanTag: string, dbIn?: DB): P
       pn,
       isAltAccount,
       leftJpa,
+      currentClanTag: pl?.currentClanTag ?? null,
+      currentClanName: pl?.currentClanName ?? null,
       excuse,
       isAlt: isAlt(pn),
       memberKey: key,

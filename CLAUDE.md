@@ -134,6 +134,12 @@ season page used to make a hundred of them in a row.
 - `participants.pn` is that season's preference number, synced from the member's CWL
   application on clashwithjpa.com. The board falls back to `players.pn` when a player has no
   application, and editing PN on a board writes the season value, not the fallback.
+- `players.current_clan_tag` / `current_clan_name` say where a player is **now**, which is not
+  what the CWL roster says: people move mid-league. `syncClanMembers()` fills them from one
+  `/clans/{tag}` call per clan, and clears anyone that clan no longer holds. Null means unknown
+  — nothing synced yet, or they are in a clan this app does not track — so the board says
+  nothing rather than guessing. Only the admin board shows it, and `[clan]/page.tsx` strips the
+  two fields from the rows it sends the bonus account, because admin-only means not sent.
 - `participants.excuse` is per season and free text, and it is the one free-text field in the
   app — not the old player remarks, which are gone for good. An empty string is not an excuse;
   `clanBoard()` trims it to `null` so a stray space cannot make somebody eligible.
@@ -171,6 +177,9 @@ website is the source of truth for PN.
 - CWL war data disappears a few days after the league ends. Sync during or straight after CWL;
   otherwise fall back to importing a ClashPerk `/export cwl` sheet.
 - `attackWins` on a player counts ranked battles only. We do not track multiplayer attacks at all.
+- `syncCwlClan()` starts with the clan's current member list and only then looks for a league
+  group, so "where is this player now" stays fresh in the eleven months there is no CWL on. That
+  call failing is swallowed: it is never a reason to fail a war sync.
 
 ## Commands
 

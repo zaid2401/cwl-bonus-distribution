@@ -54,6 +54,7 @@ function searchText(r: BoardRow) {
     r.isAltAccount && "alt",
     r.leftJpa && "left jpa",
     r.excuse && `excused ${r.excuse}`,
+    r.currentClanName && `now in ${r.currentClanName}`,
     r.selectedElsewhere && `picked elsewhere ${r.selectedElsewhere}`,
   ];
   return bits.filter(Boolean).join(" ").toLowerCase();
@@ -222,6 +223,12 @@ export function BoardTable(props: {
                       {r.tag}
                       {r.townhall ? ` · TH${r.townhall}` : ""}
                       {r.stars ? ` · ${r.stars}★` : ""}
+                      {canEdit && r.currentClanTag && r.currentClanTag !== clanTag && (
+                        <span className="text-warn" title={`Currently in ${r.currentClanTag}`}>
+                          {" "}
+                          · now in {r.currentClanName || r.currentClanTag}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="td text-right">

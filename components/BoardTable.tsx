@@ -224,7 +224,7 @@ export function BoardTable(props: {
                       {r.townhall ? ` · TH${r.townhall}` : ""}
                       {r.stars ? ` · ${r.stars}★` : ""}
                       {canEdit && r.currentClanTag && r.currentClanTag !== clanTag && (
-                        <span className="text-warn" title={`Currently in ${r.currentClanTag}`}>
+                        <span title={`Currently in ${r.currentClanTag}`}>
                           {" "}
                           · now in {r.currentClanName || r.currentClanTag}
                         </span>

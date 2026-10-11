@@ -135,11 +135,14 @@ season page used to make a hundred of them in a row.
   application on clashwithjpa.com. The board falls back to `players.pn` when a player has no
   application, and editing PN on a board writes the season value, not the fallback.
 - `players.current_clan_tag` / `current_clan_name` say where a player is **now**, which is not
-  what the CWL roster says: people move mid-league. `syncClanMembers()` fills them from one
-  `/clans/{tag}` call per clan, and clears anyone that clan no longer holds. Null means unknown
-  — nothing synced yet, or they are in a clan this app does not track — so the board says
-  nothing rather than guessing. Only the admin board shows it, and `[clan]/page.tsx` strips the
-  two fields from the rows it sends the bonus account, because admin-only means not sent.
+  what the CWL roster says: people move mid-league and the roster is locked at league start.
+  `syncCurrentClans()` fills them with **one `/players/{tag}` call each**, over the newest
+  season's roster for that clan. A clan's own member list cannot answer this — the CWL clans
+  stand empty between leagues and everyone sits in a home clan this app does not track — so
+  don't "optimise" it back to `/clans/{tag}`. Null means unknown or no clan at all, and the
+  board then says nothing rather than guess. Only the admin board shows it, and
+  `[clan]/page.tsx` strips both fields from the rows it sends the bonus account, because
+  admin-only means not sent.
 - `participants.excuse` is per season and free text, and it is the one free-text field in the
   app — not the old player remarks, which are gone for good. An empty string is not an excuse;
   `clanBoard()` trims it to `null` so a stray space cannot make somebody eligible.
@@ -177,9 +180,11 @@ website is the source of truth for PN.
 - CWL war data disappears a few days after the league ends. Sync during or straight after CWL;
   otherwise fall back to importing a ClashPerk `/export cwl` sheet.
 - `attackWins` on a player counts ranked battles only. We do not track multiplayer attacks at all.
-- `syncCwlClan()` starts with the clan's current member list and only then looks for a league
-  group, so "where is this player now" stays fresh in the eleven months there is no CWL on. That
-  call failing is swallowed: it is never a reason to fail a war sync.
+- `syncCwlClan()` is a wrapper: `syncCwlWars()` does the league group, then the clan lookup
+  runs whatever that returned, so it still happens on the paths that give up early because
+  there is no CWL on, and it sees a roster that has just been refreshed. It adds
+  "Clan checked for N player(s)" to the sync message, which is how you tell it ran at all.
+  Its failure is swallowed: never a reason to fail a war sync.
 
 ## Commands
 

@@ -1,12 +1,12 @@
-import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb, schema as s, type DB } from "./db";
 import {
   coc,
   CocError,
   enc,
   pool,
-  type ApiClan,
   type ApiLeagueGroup,
+  type ApiPlayer,
   type ApiWar,
   type ApiMember,
 } from "./coc";
@@ -105,53 +105,70 @@ async function saveWar(db: DB, seasonId: string, round: number, warTag: string, 
   if (attacks.length) await db.insert(s.cwlAttacks).values(attacks).onConflictDoNothing();
 }
 
-// Where the members of this clan are right now, which is not what the CWL roster says: people
-// move mid-league. One call for the whole clan beats one call per player.
-async function syncClanMembers(db: DB, clanTag: string): Promise<number> {
-  const clan = await coc<ApiClan>(`/clans/${enc(clanTag)}`);
-  const members = clan.memberList ?? [];
-  const tags = members.map((m) => m.tag);
-  // Anyone this clan used to hold and no longer does goes back to unknown. Someone who moved
-  // to another of our clans already points at that one, so this leaves them alone.
-  await db
-    .update(s.players)
-    .set({ currentClanTag: null, currentClanName: null })
-    .where(
-      tags.length
-        ? and(eq(s.players.currentClanTag, clanTag), notInArray(s.players.tag, tags))
-        : eq(s.players.currentClanTag, clanTag),
-    );
-  if (!members.length) return 0;
-  await db
-    .insert(s.players)
-    .values(
-      members.map((m) => ({
-        tag: m.tag,
-        name: m.name,
-        currentClanTag: clanTag,
-        currentClanName: clan.name ?? "",
-      })),
-    )
-    .onConflictDoUpdate({
-      target: s.players.tag,
-      set: {
-        name: sql`excluded.name`,
-        currentClanTag: sql`excluded.current_clan_tag`,
-        currentClanName: sql`excluded.current_clan_name`,
-      },
-    });
-  return members.length;
+// Where this clan's CWL players are right now. It has to be one call per player: the CWL
+// clans stand empty between leagues and everyone sits in their own home clan, which this app
+// does not track, so a clan's member list answers nothing. Roster comes from the newest
+// season, which is the one the boards show.
+async function syncCurrentClans(db: DB, clanTag: string): Promise<number> {
+  const [latest] = await db.select().from(s.seasons).orderBy(desc(s.seasons.sortKey)).limit(1);
+  if (!latest) return 0;
+  const roster = await db
+    .select({ playerTag: s.cwlRoster.playerTag })
+    .from(s.cwlRoster)
+    .where(and(eq(s.cwlRoster.seasonId, latest.id), eq(s.cwlRoster.clanTag, clanTag)));
+  if (!roster.length) return 0;
+
+  const found = await pool(
+    roster.map((r) => r.playerTag),
+    8,
+    async (tag) => {
+      try {
+        const p = await coc<ApiPlayer>(`/players/${enc(tag)}`);
+        // A player in no clan at all reads the same as one we have never looked up. Rare
+        // enough, and Left JPA is the tick that matters for a bonus.
+        return {
+          tag,
+          name: p.name,
+          currentClanTag: p.clan?.tag ?? null,
+          currentClanName: p.clan?.name ?? null,
+        };
+      } catch {
+        return null;
+      }
+    },
+  );
+  const rows = found.filter((r) => r !== null);
+  for (let i = 0; i < rows.length; i += 200) {
+    await db
+      .insert(s.players)
+      .values(rows.slice(i, i + 200))
+      .onConflictDoUpdate({
+        target: s.players.tag,
+        set: {
+          currentClanTag: sql`excluded.current_clan_tag`,
+          currentClanName: sql`excluded.current_clan_name`,
+        },
+      });
+  }
+  return rows.length;
 }
 
+// Wars first, then where everyone is now — in that order, so a roster that just arrived is
+// the one we look up, and so the lookup still happens on the paths that return early
+// because there is no CWL on.
 export async function syncCwlClan(clanTag: string): Promise<SyncResult> {
-  const db = await getDb();
-  // Before anything CWL: a clan that is not in a league group still has members, and knowing
-  // where people are is useful whether or not there is a war on.
+  const result = await syncCwlWars(clanTag);
   try {
-    await syncClanMembers(db, clanTag);
+    const n = await syncCurrentClans(await getDb(), clanTag);
+    if (n) return { ...result, message: `${result.message} Clan checked for ${n} player(s).` };
   } catch {
-    // The roster of who is in the clan today is a nice-to-have, never a reason to fail a sync.
+    // Knowing where people are today is a nice-to-have, never a reason to fail a war sync.
   }
+  return result;
+}
+
+async function syncCwlWars(clanTag: string): Promise<SyncResult> {
+  const db = await getDb();
   let group: ApiLeagueGroup;
   try {
     group = await coc<ApiLeagueGroup>(`/clans/${enc(clanTag)}/currentwar/leaguegroup`);

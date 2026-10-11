@@ -54,10 +54,12 @@ immediately. Three layers hold that:
   `/attacks` page inside it.
 - `seasonGate()` in `lib/session.ts` sends it back for any season but the newest, and tells the page
   whether to render admin controls. Pages pass that down as `canEdit`.
-- The board drops the PN, Alt, Left JPA and Excuse columns for that account — 9 columns against
-  13 — and every remaining control is inert bar the Bonus checkbox. The state those columns set
-  is still visible in **Flags**, which is the point: they read it, they just cannot change it. An
-  excused player carries the reason there, so the second leader sees that it was allowed and why.
+- The board drops the Alt, Left JPA and Excuse columns for that account — 10 columns against
+  13 — and every remaining control is inert bar the Bonus checkbox. **PN** is shown to both, as
+  plain text rather than the admin's input, because the second leader needs to know whose main
+  account they are ticking. The state the dropped columns set is still visible in **Flags**,
+  which is the point: they read it, they just cannot change it. An excused player carries the
+  reason there, so the second leader sees that it was allowed and why.
 - `run()` in `lib/actions.ts` takes the role an action needs, defaulting to admin.
   `updateParticipant` asks for "bonus" only when the patch is exactly `{ selected }` — anything else
   in it, even alongside `selected`, is an admin edit. **Hiding a control is not refusing a write**:

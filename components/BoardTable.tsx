@@ -73,7 +73,7 @@ export function BoardTable(props: {
 }) {
   const { canEdit, seasonId, clanTag, finalized, rows } = props;
   // The bonus leader reads the flags instead of the columns that set them.
-  const columns = canEdit ? 13 : 9;
+  const columns = canEdit ? 13 : 10;
   const { pending, result, exec } = useAction();
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<string | null>(null);
@@ -168,9 +168,11 @@ export function BoardTable(props: {
               <th className="th text-right">Donated</th>
               <th className="th text-right">Received</th>
               <th className="th">Discord</th>
+              <th className="th" title="Preference number — 1 is their main account">
+                PN
+              </th>
               {canEdit && (
                 <>
-                  <th className="th">PN</th>
                   <th className="th">Alt</th>
                   <th className="th" title="Left the alliance — no bonus">
                     Left JPA
@@ -258,11 +260,15 @@ export function BoardTable(props: {
                       onOpen={() => setEditing(editing === r.tag ? null : r.tag)}
                     />
                   </td>
+                  <td className="td">
+                    {canEdit ? (
+                      <PnCell value={r.pn} onSave={(pn) => part(r.tag, { pn })} />
+                    ) : (
+                      <span className={`tabular-nums ${r.isAlt ? "text-muted" : ""}`}>{r.pn ?? "—"}</span>
+                    )}
+                  </td>
                   {canEdit && (
                     <>
-                      <td className="td">
-                        <PnCell value={r.pn} onSave={(pn) => part(r.tag, { pn })} />
-                      </td>
                       <td className="td">
                         <input
                           type="checkbox"
